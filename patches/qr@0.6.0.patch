@@ -1,0 +1,46 @@
+diff --git a/index.js b/index.js
+index 40c38fda8c34e103f07c725094fdc875c8e0fe55..660c7063694e44705986735a238458cbb21b7a53 100644
+--- a/index.js
++++ b/index.js
+@@ -405,8 +405,8 @@ export class Bitmap {
+     border(border = 2, value) {
+         // `border` is used both as output-size delta and as embed coordinate; keep
+         // it a positive safe integer before those paths allocate or normalize.
+-        if (!Number.isSafeInteger(border) || border <= 0)
+-            throw new Error(`Bitmap.border: invalid size=${border}`);
++        if (!Number.isSafeInteger(border) || border < 0)
++            throw new Error(`Bitmap.border: invalid size=${border}`);
+         const height = this.height + 2 * border;
+         const width = this.width + 2 * border;
+         const out = new Bitmap({ height, width });
+@@ -1562,7 +1562,7 @@ export function encodeQR(text, output = 'raw', opts = {}) {
+     // 2-module default to avoid changing encoder output; callers that need a
+     // standards-conformant quiet zone must pass `border: 4` explicitly.
+     const border = _opts.border === undefined ? 2 : _opts.border;
+-    if (!Number.isSafeInteger(border) || border <= 0)
++    if (!Number.isSafeInteger(border) || border < 0)
+         throw new Error(`invalid border=${border}`);
+     res = res.border(border, false); // Add border
+     if (_opts.scale !== undefined)
+diff --git a/src/index.ts b/src/index.ts
+index f01401fe6b56cc1efb97dca170720f442846fbfb..f8727e9532d110f31d45bc5cd30ca14e5421b150 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -586,7 +586,7 @@ export class Bitmap {
+   border(border = 2, value: DrawValue): Bitmap {
+     // `border` is used both as output-size delta and as embed coordinate; keep
+     // it a positive safe integer before those paths allocate or normalize.
+-    if (!Number.isSafeInteger(border) || border <= 0)
++    if (!Number.isSafeInteger(border) || border < 0)
+       throw new Error(`Bitmap.border: invalid size=${border}`);
+     const height = this.height + 2 * border;
+     const width = this.width + 2 * border;
+@@ -1789,7 +1789,7 @@ export function encodeQR(
+   // 2-module default to avoid changing encoder output; callers that need a
+   // standards-conformant quiet zone must pass `border: 4` explicitly.
+   const border = _opts.border === undefined ? 2 : _opts.border;
+-  if (!Number.isSafeInteger(border) || border <= 0) throw new Error(`invalid border=${border}`);
++  if (!Number.isSafeInteger(border) || border < 0) throw new Error(`invalid border=${border}`);
+   res = res.border(border, false); // Add border
+   if (_opts.scale !== undefined) res = res.scale(_opts.scale); // Scale image
+   if (output === 'raw') return res.toRaw();
