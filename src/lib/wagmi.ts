@@ -5,7 +5,31 @@ import { createConfig, http } from "wagmi";
 import { arbitrum, base, bsc, mainnet, optimism, polygon, sepolia } from "viem/chains";
 import { bscTestnet, supportedChains } from "./chains";
 
-const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "00000000000000000000000000000000";
+const walletConnectProjectId = "da0be758f55ea2cd52999060284c020d";
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || walletConnectProjectId;
+const walletConnectStorageMigrationKey = "mochi-swap:walletconnect-storage-v2";
+
+function clearLegacyWalletConnectStorage() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const { localStorage } = window;
+  if (localStorage.getItem(walletConnectStorageMigrationKey) === projectId) {
+    return;
+  }
+
+  const staleKeyFragments = ["wc@", "walletconnect", "WalletConnect", "w3m", "W3M", "reown", "wagmi.recentConnectorId"];
+  for (const key of Object.keys(localStorage)) {
+    if (staleKeyFragments.some((fragment) => key.includes(fragment))) {
+      localStorage.removeItem(key);
+    }
+  }
+
+  localStorage.setItem(walletConnectStorageMigrationKey, projectId);
+}
+
+clearLegacyWalletConnectStorage();
 
 const connectors = connectorsForWallets(
   [
