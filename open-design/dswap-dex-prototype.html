@@ -1,0 +1,1179 @@
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MochiSwap · V2/V3 DEX Prototype</title>
+  <style>
+    :root {
+      --bg: #fbf7ff;
+      --surface: #ffffff;
+      --surface-warm: #f6efff;
+      --fg: #25104f;
+      --fg-2: #4d3a75;
+      --muted: #7c6c9b;
+      --meta: #8b5cf6;
+      --border: #e6d8f7;
+      --border-soft: #f0e6fb;
+      --accent: #8b5cf6;
+      --accent-on: #ffffff;
+      --accent-hover: color-mix(in oklab, var(--accent), #ef61b7 16%);
+      --accent-active: color-mix(in oklab, var(--accent), #25104f 18%);
+      --success: #16b8a6;
+      --warn: #d97706;
+      --danger: #dc2626;
+      --font-display: Inter, system-ui, sans-serif;
+      --font-body: Inter, system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      --text-xs: 12px;
+      --text-sm: 14px;
+      --text-base: 16px;
+      --text-lg: 18px;
+      --text-xl: 24px;
+      --text-2xl: 34px;
+      --text-3xl: 48px;
+      --text-4xl: 64px;
+      --leading-body: 1.52;
+      --leading-tight: 1.08;
+      --tracking-display: -0.018em;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+      --section-y-desktop: 96px;
+      --section-y-tablet: 68px;
+      --section-y-phone: 48px;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --elev-flat: none;
+      --elev-ring: 0 0 0 1px var(--border);
+      --elev-raised: 0 24px 64px rgba(65, 24, 132, 0.14);
+      --focus-ring: 0 0 0 4px rgba(139, 92, 246, 0.24);
+      --motion-fast: 150ms;
+      --motion-base: 230ms;
+      --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+      --container-max: 1240px;
+      --container-gutter-desktop: 36px;
+      --container-gutter-tablet: 24px;
+      --container-gutter-phone: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% -12%, color-mix(in oklab, #ef61b7, transparent 78%), transparent 34rem),
+        radial-gradient(circle at 84% 4%, color-mix(in oklab, #28d8c6, transparent 80%), transparent 28rem),
+        linear-gradient(180deg, var(--bg), color-mix(in oklab, var(--surface-warm), var(--bg) 54%));
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: var(--leading-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .56; }
+    h1, h2, h3, h4, p { margin: 0; }
+    h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: var(--tracking-display); text-wrap: balance; }
+    p { text-wrap: pretty; }
+
+    .app-shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0, 1fr); }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      z-index: 20;
+      border-right: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, color-mix(in oklab, var(--surface), #f6efff 24%), color-mix(in oklab, var(--surface), transparent 2%));
+      backdrop-filter: blur(16px);
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+    .brand { display: inline-flex; align-items: center; gap: var(--space-3); font-weight: 900; letter-spacing: -0.035em; }
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: block;
+      border-radius: var(--radius-lg);
+      object-fit: cover;
+      background: var(--surface);
+      box-shadow: 0 0 0 1px color-mix(in oklab, #8b5cf6, transparent 68%), 0 10px 24px rgba(139, 92, 246, 0.16);
+    }
+    .brand-name {
+      font-size: 24px;
+      line-height: 1;
+      background: linear-gradient(90deg, #25104f 0%, #5b2cc9 48%, #8b5cf6 68%, #ef61b7 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .nav-tabs { display: grid; gap: var(--space-2); }
+    .nav-tab {
+      appearance: none;
+      border: 0;
+      border-radius: var(--radius-lg);
+      background: transparent;
+      color: var(--muted);
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 800;
+      box-shadow: none;
+      transition: background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard);
+    }
+    .nav-tab:hover { color: var(--fg); background: color-mix(in oklab, var(--surface-warm), transparent 34%); }
+    .nav-tab.is-active { color: #7c3aed; background: linear-gradient(90deg, color-mix(in oklab, #8b5cf6, transparent 88%), color-mix(in oklab, #ef61b7, transparent 92%)); box-shadow: inset 0 0 0 1px color-mix(in oklab, #8b5cf6, transparent 66%); }
+    .app-actions {
+      position: fixed;
+      top: 20px;
+      right: var(--container-gutter-desktop);
+      z-index: 25;
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-3);
+    }
+    .network-pill, .icon-btn, .btn {
+      border: 1px solid var(--border);
+      background: color-mix(in oklab, var(--surface), #fbf7ff 24%);
+      color: var(--fg);
+      border-radius: var(--radius-md);
+      transition: transform var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
+    }
+    .network-pill { display: inline-flex; align-items: center; gap: var(--space-2); padding: 9px 12px; font-size: var(--text-sm); }
+    .status-dot { width: 8px; height: 8px; border-radius: var(--radius-pill); background: #28d8c6; box-shadow: 0 0 0 3px color-mix(in oklab, #28d8c6, transparent 78%); }
+    .icon-btn { width: 40px; height: 40px; display: grid; place-items: center; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: 42px; padding: 10px 16px; font-weight: 700; }
+    .btn:hover, .icon-btn:hover, .network-pill:hover { border-color: color-mix(in oklab, var(--accent), var(--border) 48%); }
+    .btn:active, .icon-btn:active, .network-pill:active { transform: translateY(1px); }
+    .btn-primary { background: linear-gradient(135deg, #8b5cf6 0%, #ef61b7 100%); color: var(--accent-on); border-color: color-mix(in oklab, #8b5cf6, #ef61b7 30%); box-shadow: 0 12px 28px rgba(139, 92, 246, 0.24); }
+    .btn-primary:hover { background: linear-gradient(135deg, var(--accent-hover) 0%, #f56fbd 100%); border-color: var(--accent-hover); box-shadow: 0 14px 32px rgba(139, 92, 246, 0.30); }
+    .btn-primary:active { background: linear-gradient(135deg, var(--accent-active) 0%, #cf4fa0 100%); }
+    .btn-soft { background: color-mix(in oklab, var(--surface-warm), var(--surface) 36%); }
+    .btn-danger { color: var(--danger); }
+    .btn-wide { width: 100%; min-height: 52px; border-radius: var(--radius-lg); font-size: var(--text-base); }
+
+    .mobile-bottom-nav { display: none; }
+    .content-shell { min-width: 0; }
+    .page {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 92px var(--container-gutter-desktop) var(--section-y-tablet);
+    }
+    .page-kicker { color: var(--meta); font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+    .page-title { margin-top: var(--space-2); font-size: clamp(var(--text-2xl), 4vw, var(--text-3xl)); line-height: var(--leading-tight); }
+    .page-copy { margin-top: var(--space-3); color: var(--fg-2); max-width: 62ch; }
+    .row { display: flex; align-items: center; gap: var(--space-3); }
+
+    .dex-layout {
+      display: grid;
+      grid-template-columns: minmax(420px, 480px);
+      justify-content: center;
+      align-items: start;
+    }
+    .pool-layout {
+      grid-template-columns: minmax(680px, 860px);
+    }
+    .trade-card, .side-panel, .pool-card, .modal-card {
+      background: color-mix(in oklab, var(--surface), #fff8fe 18%);
+      border: 1px solid color-mix(in oklab, var(--border), #ef61b7 12%);
+      border-radius: 28px;
+      box-shadow: var(--elev-raised);
+    }
+    .trade-card { padding: var(--space-5); max-width: 480px; width: 100%; justify-self: center; }
+    .pool-shell { max-width: 860px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .card-title { font-size: var(--text-xl); line-height: 1.18; }
+    .card-subtitle { color: var(--muted); font-size: var(--text-sm); margin-top: var(--space-1); }
+    .segmented { display: inline-flex; padding: var(--space-1); border-radius: var(--radius-pill); background: var(--surface-warm); border: 1px solid var(--border-soft); }
+    .segmented button { border: 0; background: transparent; color: var(--muted); border-radius: var(--radius-pill); padding: 7px 11px; font-size: var(--text-sm); }
+    .segmented button.is-active { background: var(--surface); color: var(--fg); box-shadow: var(--elev-ring); }
+
+    .token-box {
+      border: 1px solid var(--border-soft);
+      border-radius: 22px;
+      background: linear-gradient(180deg, color-mix(in oklab, var(--surface-warm), var(--surface) 34%), color-mix(in oklab, var(--surface), #fff1fb 28%));
+      padding: var(--space-4);
+    }
+    .token-meta { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); color: var(--muted); font-size: var(--text-sm); margin-bottom: var(--space-3); }
+    .token-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); align-items: center; }
+    .token-select {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      background: color-mix(in oklab, var(--surface), #fbf7ff 18%);
+      padding: 8px 11px;
+      min-width: 128px;
+      font-weight: 800;
+    }
+    .coin { width: 28px; height: 28px; border-radius: var(--radius-pill); display: grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #28d8c6); color: var(--accent-on); font-family: var(--font-mono); font-size: var(--text-xs); box-shadow: 0 6px 14px rgba(139, 92, 246, 0.18); }
+    .coin.muted { background: var(--surface-warm); color: var(--muted); border: 1px solid var(--border); }
+    .amount-input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--fg);
+      text-align: right;
+      font-size: var(--text-2xl);
+      font-weight: 800;
+      letter-spacing: var(--tracking-display);
+      font-variant-numeric: tabular-nums;
+    }
+    .max-btn { border: 0; border-radius: var(--radius-pill); padding: 4px 8px; background: color-mix(in oklab, var(--accent), transparent 88%); color: var(--accent); font-weight: 800; font-size: var(--text-xs); }
+    .swap-arrow { width: 42px; height: 42px; margin: -4px auto; position: relative; z-index: 1; border-radius: 15px; border: 4px solid var(--surface); background: linear-gradient(135deg, color-mix(in oklab, #8b5cf6, transparent 84%), color-mix(in oklab, #28d8c6, transparent 82%)); color: var(--accent); display: grid; place-items: center; }
+    .info-list { display: grid; gap: var(--space-2); margin: var(--space-4) 0; }
+    .info-line { display: flex; justify-content: space-between; gap: var(--space-4); color: var(--muted); font-size: var(--text-sm); }
+    .info-line strong { color: var(--fg); font-family: var(--font-mono); font-weight: 700; }
+    .notice { border: 1px solid var(--border); background: color-mix(in oklab, var(--surface-warm), var(--surface) 28%); color: var(--fg-2); border-radius: var(--radius-lg); padding: var(--space-4); font-size: var(--text-sm); }
+    .notice.warn { border-color: color-mix(in oklab, var(--warn), var(--border) 58%); color: var(--warn); }
+    .notice.danger { border-color: color-mix(in oklab, var(--danger), var(--border) 58%); color: var(--danger); }
+
+    .side-panel { padding: var(--space-5); box-shadow: var(--elev-ring); }
+    .state-grid { display: grid; gap: var(--space-3); }
+    .state-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); background: var(--surface); }
+    .state-label { display: flex; align-items: center; gap: var(--space-2); color: var(--fg-2); font-size: var(--text-sm); }
+    .state-value { color: var(--fg); font-family: var(--font-mono); font-size: var(--text-sm); }
+    .tiny-dot { width: 7px; height: 7px; border-radius: var(--radius-pill); background: var(--muted); }
+    .tiny-dot.ok { background: var(--success); }
+    .tiny-dot.warn { background: var(--warn); }
+    .tiny-dot.danger { background: var(--danger); }
+
+    .pool-list { display: grid; gap: var(--space-4); }
+    .pool-card { padding: var(--space-4); box-shadow: var(--elev-ring); }
+    .pool-card:hover { border-color: color-mix(in oklab, var(--accent), var(--border) 48%); box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent), transparent 72%), 0 14px 34px rgba(139, 92, 246, 0.10); }
+    .pool-actions { display: flex; justify-content: flex-end; gap: var(--space-3); flex-wrap: wrap; }
+    .pool-row { display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(120px, .7fr) minmax(140px, .8fr); align-items: center; gap: var(--space-4); }
+    .pool-row.import-result { grid-template-columns: minmax(180px, 1.4fr) minmax(112px, .7fr) minmax(128px, .8fr) auto; }
+    .pair-link { border: 0; background: transparent; color: var(--fg); padding: 0; text-align: left; display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+    .pair-link:hover h3 { color: var(--accent); }
+    .pool-row-label { display: block; color: var(--muted); font-size: var(--text-xs); margin-bottom: 2px; }
+    .pool-row-value { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 800; }
+    .pair-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); }
+    .pair-icons { display: flex; align-items: center; }
+    .pair-icons .coin + .coin { margin-left: -8px; }
+    .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+    .metric { padding: var(--space-3); border-radius: var(--radius-lg); background: linear-gradient(180deg, color-mix(in oklab, var(--surface-warm), var(--surface) 26%), color-mix(in oklab, var(--surface), #fff1fb 20%)); }
+    .metric span { display: block; color: var(--muted); font-size: var(--text-xs); }
+    .metric strong { display: block; margin-top: var(--space-1); font-family: var(--font-mono); font-size: var(--text-sm); }
+    .pair-actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-4); }
+    .empty-state { text-align: center; padding: var(--space-8) var(--space-5); border: 1px dashed color-mix(in oklab, var(--accent), var(--border) 48%); border-radius: 24px; background: linear-gradient(180deg, color-mix(in oklab, var(--surface), #f6efff 28%), var(--surface)); }
+    .detail-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .back-icon { border-radius: var(--radius-pill); background: color-mix(in oklab, var(--surface-warm), var(--surface) 32%); }
+    .back-icon:hover { background: var(--surface); color: var(--accent); }
+    .product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .product-card { padding: var(--space-4); border: 1px solid var(--border-soft); border-radius: 22px; background: linear-gradient(180deg, color-mix(in oklab, var(--surface), #fff1fb 18%), var(--surface)); box-shadow: var(--elev-ring); }
+    .product-card-head { display: flex; justify-content: space-between; gap: var(--space-4); align-items: flex-start; margin-bottom: var(--space-4); }
+    .apr-badge { display: inline-flex; align-items: center; border-radius: var(--radius-pill); padding: 6px 10px; background: color-mix(in oklab, #28d8c6, transparent 84%); color: color-mix(in oklab, #0f766e, var(--fg) 18%); font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 900; }
+    .stake-panel { display: grid; gap: var(--space-3); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-soft); }
+    .proposal-card { padding: var(--space-4); border: 1px solid var(--border-soft); border-radius: 22px; background: var(--surface); box-shadow: var(--elev-ring); }
+    .proposal-card + .proposal-card { margin-top: var(--space-3); }
+    .proposal-top { display: flex; justify-content: space-between; gap: var(--space-4); align-items: flex-start; }
+    .vote-bars { display: grid; gap: var(--space-2); margin: var(--space-4) 0; }
+    .vote-bar { display: grid; grid-template-columns: 72px 1fr 56px; align-items: center; gap: var(--space-3); color: var(--muted); font-size: var(--text-sm); }
+    .vote-track { height: 8px; border-radius: var(--radius-pill); background: var(--surface-warm); overflow: hidden; }
+    .vote-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8b5cf6, #ef61b7); }
+    .vote-fill.against { background: linear-gradient(90deg, #dc2626, #ef61b7); }
+    .vote-fill.abstain { background: linear-gradient(90deg, #7c6c9b, #c4b5fd); }
+    .status-chip { display: inline-flex; align-items: center; border-radius: var(--radius-pill); padding: 6px 10px; background: color-mix(in oklab, var(--accent), transparent 88%); color: var(--accent); font-size: var(--text-xs); font-weight: 900; }
+
+    .percent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); margin: var(--space-4) 0; }
+    .percent-grid button { min-height: 42px; border: 1px solid var(--border); border-radius: var(--radius-md); background: color-mix(in oklab, var(--surface), #fbf7ff 20%); font-weight: 800; }
+    .percent-grid button.is-active { border-color: var(--accent); color: var(--accent); background: color-mix(in oklab, var(--accent), transparent 91%); }
+    .v3-config { display: grid; gap: var(--space-4); margin-top: var(--space-4); padding: var(--space-4); border: 1px solid var(--border-soft); border-radius: 22px; background: linear-gradient(180deg, color-mix(in oklab, var(--surface), #f6efff 34%), var(--surface)); }
+    .fee-grid { grid-template-columns: repeat(3, 1fr); margin-top: var(--space-2); margin-bottom: 0; }
+    .v3-step { display: grid; gap: var(--space-2); }
+    .pool-check {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: var(--space-4);
+      border: 1px solid color-mix(in oklab, var(--accent), var(--border) 56%);
+      border-radius: var(--radius-lg);
+      background: color-mix(in oklab, var(--accent), transparent 92%);
+    }
+    .pool-check.is-new {
+      border-color: color-mix(in oklab, var(--warn), var(--border) 48%);
+      background: color-mix(in oklab, var(--warn), transparent 91%);
+    }
+    .pool-check.price-card {
+      align-items: center;
+      min-height: 78px;
+      border-color: color-mix(in oklab, var(--accent), white 34%);
+      background: linear-gradient(180deg, color-mix(in oklab, var(--accent), transparent 91%), color-mix(in oklab, var(--surface), #f5ecff 34%));
+    }
+    .pool-check.price-card.is-new {
+      border-color: color-mix(in oklab, var(--accent), white 28%);
+      background: linear-gradient(180deg, color-mix(in oklab, var(--accent), transparent 92%), color-mix(in oklab, var(--surface), #f6efff 30%));
+    }
+    .pool-check.price-card.initial-price-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: auto;
+      padding: 8px 10px 8px var(--space-4);
+    }
+    .price-card-copy {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+    .pool-check strong { display: block; font-size: var(--text-sm); }
+    .pool-check p { margin-top: 2px; color: var(--muted); font-size: var(--text-sm); }
+    .price-card-copy p { margin-top: 0; }
+    .price-direction {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 3px;
+      border: 1px solid color-mix(in oklab, var(--accent), var(--border) 54%);
+      border-radius: var(--radius-pill);
+      background: color-mix(in oklab, var(--surface), transparent 10%);
+      flex: 0 0 auto;
+    }
+    .initial-price-card .price-direction {
+      min-height: 34px;
+      padding: 2px;
+    }
+    .initial-price-card .price-direction button {
+      min-width: 48px;
+      padding: 4px 8px;
+    }
+    .price-direction button {
+      min-width: 54px;
+      border: 0;
+      border-radius: var(--radius-pill);
+      background: transparent;
+      color: var(--muted);
+      padding: 6px 9px;
+      font-size: var(--text-xs);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .price-direction button.is-active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--elev-ring);
+    }
+    .initial-price-line {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      color: var(--muted);
+      font-size: var(--text-sm);
+      line-height: 1.2;
+    }
+    .initial-price-input {
+      width: 100%;
+      min-height: 34px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--fg);
+      text-align: left;
+      font-variant-numeric: tabular-nums;
+      font-size: var(--text-xl);
+      font-weight: 900;
+      box-shadow: none;
+    }
+    .initial-price-input:focus {
+      outline: none;
+      border: 0;
+      box-shadow: none;
+    }
+    .v3-token-stage { display: grid; gap: 0; }
+    .range-segment { width: 100%; margin-top: var(--space-2); }
+    .range-segment button { flex: 1; min-height: 38px; }
+    .range-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-3); }
+    .range-inputs label { display: grid; gap: var(--space-2); color: var(--muted); font-size: var(--text-xs); font-weight: 800; }
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-lg); background: color-mix(in oklab, var(--surface), #fbf7ff 18%); }
+    .switch { width: 52px; height: 30px; border: 0; border-radius: var(--radius-pill); padding: 3px; background: var(--border); display: flex; justify-content: flex-start; }
+    .switch.is-on { justify-content: flex-end; background: linear-gradient(135deg, #8b5cf6, #ef61b7); }
+    .switch span { width: 24px; height: 24px; border-radius: var(--radius-pill); background: var(--surface); }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: var(--space-4); background: color-mix(in oklab, #25104f, transparent 56%); }
+    .modal-card { width: min(480px, 100%); max-height: min(760px, calc(100vh - 32px)); overflow: auto; padding: var(--space-5); box-shadow: var(--elev-raised); }
+    .modal-large { width: min(560px, 100%); }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); }
+    .version-list { display: grid; gap: var(--space-3); }
+    .version-card { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--space-4); text-align: left; border: 1px solid var(--border); border-radius: 22px; background: color-mix(in oklab, var(--surface), #fbf7ff 28%); padding: var(--space-4); }
+    .version-card:hover { border-color: color-mix(in oklab, var(--accent), var(--border) 42%); transform: translateY(-1px); }
+    .version-card:disabled { background: var(--surface-warm); transform: none; }
+    .version-card strong { display: block; font-size: var(--text-base); }
+    .search-input, .plain-input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: color-mix(in oklab, var(--surface-warm), var(--surface) 24%);
+      color: var(--fg);
+      outline: 0;
+      padding: 13px 14px;
+    }
+    .search-input:focus, .plain-input:focus { border-color: var(--accent); box-shadow: var(--focus-ring); }
+    .token-list { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
+    .token-item { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); background: var(--surface); padding: var(--space-3); text-align: left; }
+    .token-item:hover { border-color: color-mix(in oklab, var(--accent), var(--border) 50%); background: color-mix(in oklab, var(--surface-warm), var(--surface) 48%); }
+    .token-name { color: var(--muted); font-size: var(--text-sm); }
+    .import-token-stack { display: grid; gap: 0; margin-bottom: var(--space-4); }
+    .import-token-box { padding: var(--space-4); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-4); }
+    .import-token-box .token-meta { margin-bottom: 0; display: grid; gap: var(--space-1); }
+    .import-token-select { width: auto; min-width: 168px; min-height: 48px; justify-content: space-between; }
+    .inline-token-picker { display: grid; gap: var(--space-2); max-height: 248px; overflow: auto; margin: var(--space-3) 0 var(--space-4); padding: var(--space-2); border: 1px solid var(--border-soft); border-radius: 20px; background: color-mix(in oklab, var(--surface-warm), var(--surface) 18%); }
+    .import-result-card { box-shadow: var(--elev-ring); margin-top: 12px; overflow: hidden; }
+    .import-result-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--space-4); }
+    .import-result-metrics { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-soft); }
+    .import-result-action { justify-self: end; align-self: start; min-width: 96px; max-width: 128px; }
+    .mini-btn { border: 1px solid var(--border); border-radius: var(--radius-pill); background: color-mix(in oklab, var(--surface), #fbf7ff 20%); padding: 5px 9px; font-weight: 800; font-size: var(--text-xs); }
+    .modal-actions { display: grid; gap: var(--space-3); margin-top: var(--space-5); }
+    .status-steps { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+    .status-step { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); background: color-mix(in oklab, var(--surface), #fbf7ff 18%); }
+    .spinner { width: 16px; height: 16px; border-radius: var(--radius-pill); border: 2px solid var(--border); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 920px) {
+      .app-shell { display: block; padding-bottom: 78px; }
+      .sidebar { position: sticky; height: auto; border-right: 0; border-bottom: 1px solid var(--border); padding: 12px var(--container-gutter-phone); display: grid; grid-template-columns: 1fr auto; align-items: center; }
+      .sidebar .nav-tabs { display: none; }
+      .brand { gap: var(--space-2); }
+      .brand-mark { width: 34px; height: 34px; border-radius: var(--radius-md); }
+      .brand-name { font-size: 19px; }
+      .app-actions { top: 12px; right: var(--container-gutter-phone); gap: var(--space-2); }
+      .app-actions .network-pill { display: none; }
+      .page { padding: 72px var(--container-gutter-phone) var(--section-y-phone); }
+      .mobile-bottom-nav {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        z-index: 30;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-2);
+        padding: var(--space-2);
+        border: 1px solid color-mix(in oklab, var(--accent), var(--border) 58%);
+        border-radius: 22px;
+        background: color-mix(in oklab, var(--surface), transparent 6%);
+        box-shadow: var(--elev-raised);
+        backdrop-filter: blur(16px);
+      }
+      .mobile-bottom-nav .nav-tab { text-align: center; padding: 11px 12px; border-radius: 16px; }
+      .dex-layout { grid-template-columns: 1fr; }
+      .pool-layout { grid-template-columns: 1fr; }
+      .pool-row { grid-template-columns: 1fr; align-items: start; }
+      .import-result-row { grid-template-columns: 1fr; }
+      .import-result-action { justify-self: stretch; max-width: none; width: 100%; }
+      .import-result-metrics { grid-template-columns: 1fr; }
+      .trade-card { max-width: none; padding: var(--space-4); border-radius: 24px; }
+      .pool-shell { max-width: none; }
+      .side-panel { padding: var(--space-4); }
+      .amount-input { font-size: var(--text-xl); }
+      .metric-grid { grid-template-columns: 1fr; }
+      .product-grid { grid-template-columns: 1fr; }
+      .proposal-top { display: grid; }
+      .vote-bar { grid-template-columns: 64px 1fr 48px; }
+      .pair-actions { flex-direction: column; }
+      .btn { padding-inline: 13px; }
+      .hide-mobile { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel">
+    const { useMemo, useState } = React;
+
+    const baseTokens = [
+      { symbol: "ETH", name: "Ether", balance: "3.8421", address: "native", decimals: 18 },
+      { symbol: "WETH", name: "Wrapped Ether", balance: "2.4000", address: "0xC02a...6Cc2", decimals: 18 },
+      { symbol: "USDT", name: "Tether USD", balance: "12,430.50", address: "0xdAC1...1ec7", decimals: 6 },
+      { symbol: "USDC", name: "USD Coin", balance: "8,920.14", address: "0xA0b8...eB48", decimals: 6 },
+      { symbol: "DAI", name: "Dai Stablecoin", balance: "4,118.77", address: "0x6B17...271d", decimals: 18 }
+    ];
+
+    const mockPools = [
+      { id: "eth-usdc", version: "V2", a: "ETH", b: "USDC", share: "0.42%", lp: "14.2381", depA: "1.9200", depB: "6,812.44", feeTier: "0.3%", address: "0x8f21...A7c9" },
+      { id: "weth-dai", version: "V2", a: "WETH", b: "DAI", share: "0.18%", lp: "8.9124", depA: "0.7400", depB: "2,621.80", feeTier: "0.3%", address: "0x4d19...Ee02" },
+      { id: "v3-usdt-usdc", version: "V3", a: "USDT", b: "USDC", share: "0.09%", lp: "Position #4821", depA: "4,200.00", depB: "4,196.80", feeTier: "0.05%", range: "Full range", minPrice: "0", maxPrice: "∞", feesA: "18.42", feesB: "17.95", address: "0x91fe...C308" }
+    ];
+
+    const farmPools = [
+      { id: "farm-eth-usdc", pair: "ETH / USDC", apr: "38.4%", staked: "8.2000", wallet: "6.0381", rewards: "128.42", tvl: "$4.82M" },
+      { id: "farm-weth-dai", pair: "WETH / DAI", apr: "24.7%", staked: "0.0000", wallet: "8.9124", rewards: "0.00", tvl: "$2.16M" },
+      { id: "farm-weth-usdt", pair: "WETH / USDT", apr: "31.9%", staked: "3.1048", wallet: "0.0000", rewards: "41.08", tvl: "$1.34M" }
+    ];
+
+    const proposals = [
+      { id: "MIP-12", title: "Increase MOCHI rewards for stablecoin LP farms", status: "Active", forPct: 68, againstPct: 21, abstainPct: 11, quorum: "72.4%", ends: "2d 14h" },
+      { id: "MIP-11", title: "Add WETH / USDT farm to boosted emissions", status: "Active", forPct: 54, againstPct: 33, abstainPct: 13, quorum: "61.8%", ends: "5d 03h" },
+      { id: "MIP-10", title: "Route 10% protocol fees to treasury buyback", status: "Queued", forPct: 79, againstPct: 12, abstainPct: 9, quorum: "84.1%", ends: "Passed" }
+    ];
+
+    function Icon({ name }) {
+      const paths = {
+        settings: <><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.08-1l2.05-1.58-2-3.46-2.42.98a7.2 7.2 0 0 0-1.72-1L14.5 3h-5l-.33 2.94a7.2 7.2 0 0 0-1.72 1l-2.42-.98-2 3.46L5.08 11a7 7 0 0 0 0 2l-2.05 1.58 2 3.46 2.42-.98c.52.42 1.1.76 1.72 1L9.5 21h5l.33-2.94c.62-.24 1.2-.58 1.72-1l2.42.98 2-3.46L18.92 13c.05-.33.08-.66.08-1Z"/></>,
+        chevron: <path d="m8 10 4 4 4-4"/>,
+        chevronUp: <path d="m8 14 4-4 4 4"/>,
+        arrowLeft: <><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></>,
+        swap: <><path d="M7 7h10l-3-3"/><path d="M17 17H7l3 3"/></>,
+        close: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>,
+        plus: <><path d="M12 5v14"/><path d="M5 12h14"/></>,
+        wallet: <><path d="M4 7h16v11H4z"/><path d="M16 12h4"/><path d="M7 7V5h10v2"/></>
+      };
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+    }
+
+    function Coin({ symbol, muted=false }) {
+      return <span className={"coin " + (muted ? "muted" : "")}>{symbol ? symbol.slice(0, 1) : "?"}</span>;
+    }
+
+    function App() {
+      const [page, setPage] = useState("swap");
+      const [connected, setConnected] = useState(false);
+      const [networkError, setNetworkError] = useState(false);
+      const [slippage, setSlippage] = useState("0.5%");
+      const [deadline, setDeadline] = useState("20");
+      const [expert, setExpert] = useState(false);
+      const [customTokens, setCustomTokens] = useState([]);
+      const [modal, setModal] = useState(null);
+      const [tokenTarget, setTokenTarget] = useState(null);
+      const [fromToken, setFromToken] = useState(baseTokens[0]);
+      const [toToken, setToToken] = useState(baseTokens[3]);
+      const [liqA, setLiqA] = useState(baseTokens[0]);
+      const [liqB, setLiqB] = useState(baseTokens[3]);
+      const [fromAmount, setFromAmount] = useState("");
+      const [liqAmount, setLiqAmount] = useState("");
+      const [liquidityMode, setLiquidityMode] = useState("V2");
+      const [v3FeeTier, setV3FeeTier] = useState("0.3%");
+      const [rangeMode, setRangeMode] = useState("full");
+      const [initialPrice, setInitialPrice] = useState("");
+      const [initialPriceDirection, setInitialPriceDirection] = useState("quote");
+      const [minPrice, setMinPrice] = useState("3000");
+      const [maxPrice, setMaxPrice] = useState("4200");
+      const [removePercent, setRemovePercent] = useState(50);
+      const [usePermit, setUsePermit] = useState(true);
+      const [statusStage, setStatusStage] = useState("idle");
+      const [approvals, setApprovals] = useState({ swap: false, supplyA: false, supplyB: false, lp: false, permit: false });
+      const [pools, setPools] = useState(mockPools);
+      const [selectedPool, setSelectedPool] = useState(mockPools[0]);
+      const [farmPositions, setFarmPositions] = useState(farmPools);
+      const [selectedFarm, setSelectedFarm] = useState(farmPools[0]);
+      const [mochiStaked, setMochiStaked] = useState("12,480");
+      const [selectedProposal, setSelectedProposal] = useState(proposals[0]);
+      const allTokens = [...baseTokens, ...customTokens];
+
+      function openTokenModal(target) {
+        setTokenTarget(target);
+        setModal("token");
+      }
+      function chooseToken(token) {
+        if (tokenTarget === "from") setFromToken(token);
+        if (tokenTarget === "to") setToToken(token);
+        if (tokenTarget === "liqA") setLiqA(token);
+        if (tokenTarget === "liqB") setLiqB(token);
+        setModal(null);
+      }
+      function runStatus(stage) {
+        setStatusStage(stage);
+        setModal("status");
+        window.setTimeout(() => setStatusStage(stage === "failed" ? "failed" : "submitted"), 900);
+        window.setTimeout(() => setStatusStage(stage === "failed" ? "failed" : "confirmed"), 1800);
+      }
+      function approve(key) {
+        setStatusStage("waiting");
+        setModal("status");
+        window.setTimeout(() => {
+          setApprovals(prev => ({ ...prev, [key]: true }));
+          setStatusStage("confirmed");
+        }, 900);
+      }
+
+      const nav = [
+        ["swap", "Swap"],
+        ["pool", "Pool"],
+        ["farm", "Farm"],
+        ["governance", "Governance"]
+      ];
+
+      return (
+        <div className="app-shell">
+          <aside className="sidebar">
+            <div className="brand"><img className="brand-mark" src="mpp9ee9o-image.png" alt="" /><span className="brand-name">MochiSwap</span></div>
+            <nav className="nav-tabs" aria-label="DEX navigation">
+              {nav.map(([id, label]) => (
+                <button key={id} className={"nav-tab " + (page === id ? "is-active" : "")} onClick={() => setPage(id)}>{label}</button>
+              ))}
+            </nav>
+          </aside>
+
+          <main className="page content-shell">
+            <div className="app-actions">
+              <button className="network-pill" onClick={() => setNetworkError(!networkError)}><span className="status-dot"></span>{networkError ? "Wrong Network" : "Ethereum"}</button>
+              <button className="btn btn-soft" onClick={() => setConnected(!connected)}><Icon name="wallet" />{connected ? "0x1234...abcd" : "Connect Wallet"}</button>
+            </div>
+            {page === "swap" && <SwapPage connected={connected} setConnected={setConnected} networkError={networkError} fromToken={fromToken} toToken={toToken} setFromToken={setFromToken} setToToken={setToToken} fromAmount={fromAmount} setFromAmount={setFromAmount} openTokenModal={openTokenModal} slippage={slippage} approvals={approvals} approve={approve} setModal={setModal} />}
+            {page === "pool" && <PoolPage setPage={setPage} connected={connected} pools={pools} setModal={setModal} setLiquidityMode={setLiquidityMode} openPair={(pool) => { setSelectedPool(pool); setPage("pair"); }} />}
+            {page === "pair" && <PairDetailPage pool={selectedPool} setPage={setPage} setModal={setModal} setLiquidityMode={setLiquidityMode} />}
+            {page === "add" && <AddLiquidityPage setPage={setPage} connected={connected} setConnected={setConnected} liqA={liqA} liqB={liqB} liqAmount={liqAmount} setLiqAmount={setLiqAmount} openTokenModal={openTokenModal} approvals={approvals} approve={approve} setModal={setModal} liquidityMode={liquidityMode} setLiquidityMode={setLiquidityMode} v3FeeTier={v3FeeTier} setV3FeeTier={setV3FeeTier} initialPrice={initialPrice} setInitialPrice={setInitialPrice} initialPriceDirection={initialPriceDirection} setInitialPriceDirection={setInitialPriceDirection} rangeMode={rangeMode} setRangeMode={setRangeMode} minPrice={minPrice} setMinPrice={setMinPrice} maxPrice={maxPrice} setMaxPrice={setMaxPrice} />}
+            {page === "remove" && <RemoveLiquidityPage setPage={setPage} connected={connected} setConnected={setConnected} usePermit={usePermit} setUsePermit={setUsePermit} percent={removePercent} setPercent={setRemovePercent} approvals={approvals} approve={approve} setModal={setModal} />}
+            {page === "farm" && <FarmPage connected={connected} setConnected={setConnected} farms={farmPositions} openFarm={(farm) => { setSelectedFarm(farm); setModal("stakeLp"); }} setModal={setModal} />}
+            {page === "governance" && <GovernancePage connected={connected} setConnected={setConnected} mochiStaked={mochiStaked} proposals={proposals} vote={(proposal) => { setSelectedProposal(proposal); setModal("vote"); }} setModal={setModal} />}
+          </main>
+
+          {modal === "token" && <TokenModal tokens={allTokens} customTokens={customTokens} setCustomTokens={setCustomTokens} chooseToken={chooseToken} close={() => setModal(null)} />}
+          {modal === "settings" && <SettingsModal slippage={slippage} setSlippage={setSlippage} deadline={deadline} setDeadline={setDeadline} expert={expert} setExpert={setExpert} close={() => setModal(null)} />}
+          {modal === "createPosition" && <CreatePositionModal close={() => setModal(null)} choose={(mode) => { setLiquidityMode(mode); setModal(null); setPage("add"); }} />}
+          {modal === "confirmSwap" && <ConfirmSwap fromToken={fromToken} toToken={toToken} amount={fromAmount || "1.0"} close={() => setModal(null)} confirm={() => runStatus("waiting")} />}
+          {modal === "confirmSupply" && <ConfirmSupply liqA={liqA} liqB={liqB} amount={liqAmount || "1.0"} liquidityMode={liquidityMode} feeTier={v3FeeTier} initialPrice={initialPrice} initialPriceDirection={initialPriceDirection} rangeMode={rangeMode} minPrice={minPrice} maxPrice={maxPrice} close={() => setModal(null)} confirm={() => {
+            const suppliedPool = {
+              id: `${liquidityMode.toLowerCase()}-${liqA.symbol.toLowerCase()}-${liqB.symbol.toLowerCase()}`,
+              version: liquidityMode,
+              a: liqA.symbol,
+              b: liqB.symbol,
+              share: "0.64%",
+              lp: liquidityMode === "V3" ? "Position #new" : `${(Number(liqAmount || "1.0") * 7.42).toFixed(4)}`,
+              depA: Number(liqAmount || "1.0").toFixed(4),
+              depB: `${(Number(liqAmount || "1.0") * 3502.14).toFixed(2)}`,
+              feeTier: liquidityMode === "V3" ? v3FeeTier : "0.3%",
+              initialPrice: liquidityMode === "V3" ? initialPrice : undefined,
+              initialPriceDirection: liquidityMode === "V3" ? initialPriceDirection : undefined,
+              range: liquidityMode === "V3" ? (rangeMode === "full" ? "Full range" : `${minPrice} - ${maxPrice}`) : undefined,
+              minPrice: liquidityMode === "V3" ? (rangeMode === "full" ? "0" : minPrice) : undefined,
+              maxPrice: liquidityMode === "V3" ? (rangeMode === "full" ? "∞" : maxPrice) : undefined,
+              feesA: "0.00",
+              feesB: "0.00",
+              address: "0x5a74...D915"
+            };
+            setPools(prev => prev.some(item => item.id === suppliedPool.id) ? prev : [suppliedPool, ...prev]);
+            setSelectedPool(suppliedPool);
+            setPage("pair");
+            runStatus("waiting");
+          }} />}
+          {modal === "confirmRemove" && <ConfirmRemove percent={removePercent} usePermit={usePermit} close={() => setModal(null)} confirm={() => { setPage("pair"); runStatus("removing"); }} />}
+          {modal === "claimFees" && <ClaimFeesModal pool={selectedPool} close={() => setModal(null)} confirm={() => runStatus("waiting")} />}
+          {modal === "import" && <ImportPositionModal tokens={allTokens} pools={pools} connected={connected} close={() => setModal(null)} addPool={(pool) => {
+            setConnected(true);
+            setPools(prev => prev.some(item => item.id === pool.id || item.address === pool.address || [item.a, item.b].sort().join("-") === [pool.a, pool.b].sort().join("-")) ? prev : [pool, ...prev]);
+            setSelectedPool(pool);
+            setModal(null);
+            setPage("pool");
+          }} />}
+          {modal === "stakeLp" && <StakeLpModal farm={selectedFarm} connected={connected} setConnected={setConnected} close={() => setModal(null)} confirm={(mode, amount) => {
+            setFarmPositions(prev => prev.map(farm => farm.id === selectedFarm.id ? { ...farm, staked: mode === "stake" ? (Number(farm.staked.replace(/,/g, "")) + Number(amount || "0")).toFixed(4) : Math.max(0, Number(farm.staked.replace(/,/g, "")) - Number(amount || "0")).toFixed(4) } : farm));
+            setModal(null);
+          }} />}
+          {modal === "stakeMochi" && <StakeMochiModal connected={connected} setConnected={setConnected} mochiStaked={mochiStaked} setMochiStaked={setMochiStaked} close={() => setModal(null)} />}
+          {modal === "vote" && <VoteModal proposal={selectedProposal} connected={connected} setConnected={setConnected} close={() => setModal(null)} />}
+          {modal === "status" && <StatusModal stage={statusStage} close={() => setModal(null)} fail={() => setStatusStage("failed")} />}
+          <nav className="mobile-bottom-nav" aria-label="Mobile DEX navigation">
+            {nav.map(([id, label]) => (
+              <button key={id} className={"nav-tab " + (page === id ? "is-active" : "")} onClick={() => setPage(id)}>{label}</button>
+            ))}
+          </nav>
+        </div>
+      );
+    }
+
+    function TokenBox({ label, token, amount, setAmount, onSelect, maxValue }) {
+      return <div className="token-box">
+        <div className="token-meta"><span>{label}</span><span className="num">{token ? token.balance : "0.00"} <button className="max-btn" onClick={() => setAmount(maxValue || "1.0")}>Max</button></span></div>
+        <div className="token-row">
+          <button className="token-select" onClick={onSelect}>{token ? <Coin symbol={token.symbol} /> : <Coin muted />}<span>{token ? token.symbol : "Select"}</span><Icon name="chevron" /></button>
+          <input className="amount-input" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.0" inputMode="decimal" />
+        </div>
+      </div>;
+    }
+
+    function SwapPage(props) {
+      const { connected, setConnected, networkError, fromToken, toToken, setFromToken, setToToken, fromAmount, setFromAmount, openTokenModal, slippage, approvals, approve, setModal } = props;
+      const button = networkError ? "Wrong Network" : !connected ? "Connect Wallet" : !fromToken || !toToken ? "Select Token" : !fromAmount ? "Enter Amount" : Number(fromAmount) > 3.8421 ? "Insufficient Balance" : !approvals.swap ? "Approve Token" : "Swap";
+      return <section className="dex-layout" data-od-id="swap-page">
+        <div className="trade-card">
+          <div className="card-head"><div><h2 className="card-title">Swap</h2></div><button className="icon-btn" onClick={() => setModal("settings")}><Icon name="settings" /></button></div>
+          <TokenBox label="You pay" token={fromToken} amount={fromAmount} setAmount={setFromAmount} onSelect={() => openTokenModal("from")} maxValue="3.8421" />
+          <button className="swap-arrow" onClick={() => { setFromToken(toToken); setToToken(fromToken); }} aria-label="Switch tokens"><Icon name="swap" /></button>
+          <TokenBox label="You receive" token={toToken} amount={fromAmount ? (Number(fromAmount || 0) * 3502.14).toFixed(2) : ""} setAmount={() => {}} onSelect={() => openTokenModal("to")} maxValue="" />
+          <div className="info-list">
+            <Info label="Rate" value={`1 ${fromToken.symbol} = 3,502.14 ${toToken.symbol}`} />
+            <Info label="Price Impact" value="0.08%" />
+            <Info label="Minimum Received" value={`${fromAmount ? (Number(fromAmount) * 3484.63).toFixed(2) : "0.00"} ${toToken.symbol}`} />
+            <Info label="Slippage Tolerance" value={slippage} />
+          </div>
+          <button className="btn btn-primary btn-wide" disabled={networkError || button === "Enter Amount" || button === "Insufficient Balance"} onClick={() => button === "Connect Wallet" ? setConnected(true) : button === "Approve Token" ? approve("swap") : button === "Swap" ? setModal("confirmSwap") : null}>{button}</button>
+        </div>
+      </section>;
+    }
+
+    function PoolPage({ setPage, connected, pools, setModal, setLiquidityMode, openPair }) {
+      return <section className="dex-layout pool-layout" data-od-id="pool-page">
+        <div className="trade-card pool-shell">
+          <div className="card-head"><div><h2 className="card-title">Pool</h2><p className="card-subtitle">Manage V2 pairs and V3 concentrated liquidity positions.</p></div><div className="pool-actions"><button className="btn btn-primary" onClick={() => setModal("createPosition")}><Icon name="plus" />Create position</button><button className="btn btn-soft" onClick={() => setModal("import")}>Import position</button></div></div>
+          {connected && pools.length ? <div className="pool-list">{pools.map(pool => <PoolCard key={pool.id} pool={pool} setPage={setPage} openPair={openPair} />)}</div> : <div className="empty-state"><h3>No liquidity found</h3><p className="card-subtitle" style={{margin: "8px 0 0"}}>Create your first liquidity position</p></div>}
+        </div>
+      </section>;
+    }
+
+    function liquidityRangeLabel(pool) {
+      return pool.version === "V3" ? (pool.range || `${pool.minPrice} - ${pool.maxPrice}`) : "Full range";
+    }
+
+    function PoolCard({ pool, setPage, openPair }) {
+      return <article className="pool-card">
+        <div className="pool-row">
+          <button className="pair-link" onClick={() => openPair(pool)} aria-label={`Open ${pool.a} ${pool.b} pair details`}><div className="pair-icons"><Coin symbol={pool.a}/><Coin symbol={pool.b}/></div><div><h3>{pool.a} / {pool.b}</h3><p className="card-subtitle">{pool.version || "V2"} {pool.version === "V3" ? `· ${pool.feeTier}` : "pair"}</p></div></button>
+          <div><span className="pool-row-label">Fee tier</span><strong className="pool-row-value">{pool.feeTier || "0.3%"}</strong></div>
+          <div><span className="pool-row-label">Range</span><strong className="pool-row-value">{liquidityRangeLabel(pool)}</strong></div>
+        </div>
+      </article>;
+    }
+
+    function PairDetailPage({ pool, setPage, setModal, setLiquidityMode }) {
+      const isV3 = pool.version === "V3";
+      return <section className="dex-layout pool-layout" data-od-id="pair-detail-page">
+        <div className="trade-card pool-shell">
+          <div className="detail-head"><button className="icon-btn back-icon" onClick={() => setPage("pool")} aria-label="Back"><Icon name="arrowLeft" /></button><div className="pool-actions">{isV3 && <button className="btn btn-soft" onClick={() => setModal("claimFees")}>Collect fees</button>}<button className="btn btn-soft" onClick={() => { setLiquidityMode(pool.version || "V2"); setPage("add"); }}>Add</button><button className="btn btn-primary" onClick={() => setPage("remove")}>Remove</button></div></div>
+          <div className="pair-head"><div className="row"><div className="pair-icons"><Coin symbol={pool.a}/><Coin symbol={pool.b}/></div><div><h2 className="card-title">{pool.a} / {pool.b}</h2><p className="card-subtitle">Pair details</p></div></div><span className="network-pill">{pool.version || "V2"} {isV3 ? pool.feeTier : "Pair"}</span></div>
+          <div className="metric-grid">
+            <Metric label="Range" value={liquidityRangeLabel(pool)} /><Metric label="LP Token balance" value={pool.lp} /><Metric label={`${pool.a} deposited`} value={pool.depA} /><Metric label={`${pool.b} deposited`} value={pool.depB} />
+          </div>
+          <div className="info-list">
+            <Info label="Pair address" value={pool.address || "0x9d8a...4e21"} />
+            <Info label="Fee tier" value={pool.feeTier || "0.3%"} />
+            {isV3 && <Info label="Unclaimed fees" value={`${pool.feesA || "0.00"} ${pool.a} + ${pool.feesB || "0.00"} ${pool.b}`} />}
+            <Info label="Price" value={`1 ${pool.a} = 3,548.15 ${pool.b}`} />
+          </div>
+        </div>
+      </section>;
+    }
+
+    function AddLiquidityPage({ setPage, connected, setConnected, liqA, liqB, liqAmount, setLiqAmount, openTokenModal, approvals, approve, setModal, liquidityMode, setLiquidityMode, v3FeeTier, setV3FeeTier, initialPrice, setInitialPrice, initialPriceDirection, setInitialPriceDirection, rangeMode, setRangeMode, minPrice, setMinPrice, maxPrice, setMaxPrice }) {
+      const [priceDirection, setPriceDirection] = React.useState("quote");
+      const receive = liqAmount ? (Number(liqAmount) * 184.21).toFixed(2) : "";
+      const isV3 = liquidityMode === "V3";
+      const v3PoolExists = isV3 && v3FeeTier === "0.05%";
+      const currentV3Price = priceDirection === "quote" ? `1 ${liqA.symbol} = 3,548.15 ${liqB.symbol}` : `1 ${liqB.symbol} = 0.00028184 ${liqA.symbol}`;
+      const initialPriceReady = !isV3 || v3PoolExists || Number(initialPrice) > 0;
+      const rangeReady = !isV3 || rangeMode === "full" || (minPrice && maxPrice && Number(minPrice) < Number(maxPrice));
+      const button = !connected ? "Connect Wallet" : !liqA || !liqB ? "Select Token" : !initialPriceReady ? "Set initial price" : !rangeReady ? "Set valid range" : !liqAmount ? "Enter Amount" : Number(liqAmount) > 3.8421 ? "Insufficient Balance" : !approvals.supplyA ? `Approve ${liqA.symbol}` : !approvals.supplyB ? `Approve ${liqB.symbol}` : isV3 ? (v3PoolExists ? "Add V3 Liquidity" : "Create V3 Pool") : "Supply";
+      function formatRangeValue(value) {
+        const n = Number(value);
+        if (!Number.isFinite(n) || n <= 0) return "";
+        return n >= 1 ? String(Number(n.toFixed(6))) : String(Number(n.toFixed(10)));
+      }
+      function flipCustomRange() {
+        if (rangeMode !== "custom") return;
+        const min = Number(minPrice);
+        const max = Number(maxPrice);
+        if (!Number.isFinite(min) || !Number.isFinite(max) || min <= 0 || max <= 0) return;
+        setMinPrice(formatRangeValue(1 / max));
+        setMaxPrice(formatRangeValue(1 / min));
+      }
+      function changeCurrentPriceDirection(nextDirection) {
+        if (nextDirection === priceDirection) return;
+        flipCustomRange();
+        setPriceDirection(nextDirection);
+      }
+      function changeInitialPriceDirection(nextDirection) {
+        if (nextDirection === initialPriceDirection) return;
+        flipCustomRange();
+        setInitialPriceDirection(nextDirection);
+      }
+      return <section className="dex-layout" data-od-id="add-liquidity-page">
+        <div className="trade-card">
+          <div className="detail-head"><button className="icon-btn back-icon" onClick={() => setPage("pool")} aria-label="Back"><Icon name="arrowLeft" /></button></div>
+          <div className="card-head"><div><h2 className="card-title">{isV3 ? "Create V3 Position" : "Add Liquidity"}</h2><p className="card-subtitle">{isV3 ? "Set fee, pool initialization, and range before entering token amounts." : "V2 pools use a fixed liquidity provider fee."}</p></div><span className="network-pill">{isV3 ? "V3" : "0.3%"}</span></div>
+          {!isV3 && <>
+            <TokenBox label="Token A" token={liqA} amount={liqAmount} setAmount={setLiqAmount} onSelect={() => openTokenModal("liqA")} maxValue="3.8421" />
+            <div className="swap-arrow"><Icon name="plus" /></div>
+            <TokenBox label="Token B" token={liqB} amount={receive} setAmount={() => {}} onSelect={() => openTokenModal("liqB")} maxValue="" />
+          </>}
+          {isV3 && <div className="v3-config">
+            <div className="v3-step">
+              <p className="card-subtitle">Fee tier</p>
+              <div className="percent-grid fee-grid">{["0.05%", "0.3%", "1.0%"].map(tier => <button key={tier} className={v3FeeTier === tier ? "is-active" : ""} onClick={() => setV3FeeTier(tier)}>{tier}</button>)}</div>
+            </div>
+            {v3PoolExists ? <div className="pool-check price-card">
+              <div className="price-card-copy">
+                <strong>Current price</strong>
+                <p>{currentV3Price}</p>
+              </div>
+              <div className="price-direction" aria-label="Price display direction">
+                <button className={priceDirection === "base" ? "is-active" : ""} onClick={() => changeCurrentPriceDirection("base")}>{liqA.symbol}</button>
+                <button className={priceDirection === "quote" ? "is-active" : ""} onClick={() => changeCurrentPriceDirection("quote")}>{liqB.symbol}</button>
+              </div>
+            </div> : <div className="v3-step">
+              <p className="card-subtitle">Initial price</p>
+              <div className="pool-check price-card is-new initial-price-card">
+                <p className="initial-price-line">
+                  <input className="initial-price-input" value={initialPrice} onChange={e => setInitialPrice(e.target.value)} inputMode="decimal" placeholder="0.00" aria-label="Initial price" />
+                </p>
+                <div className="price-direction" aria-label="Initial price direction">
+                  <button className={initialPriceDirection === "base" ? "is-active" : ""} onClick={() => changeInitialPriceDirection("base")}>{liqA.symbol}</button>
+                  <button className={initialPriceDirection === "quote" ? "is-active" : ""} onClick={() => changeInitialPriceDirection("quote")}>{liqB.symbol}</button>
+                </div>
+              </div>
+            </div>}
+            <div className="v3-step">
+              <p className="card-subtitle">Price range</p>
+              <div className="segmented range-segment">
+                <button className={rangeMode === "full" ? "is-active" : ""} onClick={() => setRangeMode("full")}>Full range</button>
+                <button className={rangeMode === "custom" ? "is-active" : ""} onClick={() => setRangeMode("custom")}>Custom range</button>
+              </div>
+              {rangeMode === "custom" && <div className="range-inputs">
+                <label><span>Min price</span><input className="plain-input" value={minPrice} onChange={e => setMinPrice(e.target.value)} inputMode="decimal" /></label>
+                <label><span>Max price</span><input className="plain-input" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} inputMode="decimal" /></label>
+              </div>}
+            </div>
+            <div className="v3-step">
+              <p className="card-subtitle">Deposit amounts</p>
+              <div className="v3-token-stage">
+                <TokenBox label="Token A" token={liqA} amount={liqAmount} setAmount={setLiqAmount} onSelect={() => openTokenModal("liqA")} maxValue="3.8421" />
+                <div className="swap-arrow"><Icon name="plus" /></div>
+                <TokenBox label="Token B" token={liqB} amount={receive} setAmount={() => {}} onSelect={() => openTokenModal("liqB")} maxValue="" />
+              </div>
+            </div>
+          </div>}
+          <button className="btn btn-primary btn-wide" disabled={button === "Enter Amount" || button === "Insufficient Balance" || button === "Set valid range" || button === "Set initial price"} onClick={() => button === "Connect Wallet" ? setConnected(true) : button.includes("Approve") ? approve(button.includes(liqA.symbol) ? "supplyA" : "supplyB") : (button === "Supply" || button === "Create V3 Pool" || button === "Add V3 Liquidity") ? setModal("confirmSupply") : null}>{button}</button>
+        </div>
+      </section>;
+    }
+
+    function RemoveLiquidityPage({ setPage, connected, setConnected, usePermit, setUsePermit, percent, setPercent, approvals, approve, setModal }) {
+      const button = !connected ? "Connect Wallet" : usePermit && !approvals.permit ? "Sign Permit" : !usePermit && !approvals.lp ? "Approve LP Token" : "Remove Liquidity";
+      return <section className="dex-layout" data-od-id="remove-liquidity-page">
+        <div className="trade-card">
+          <div className="detail-head"><button className="icon-btn back-icon" onClick={() => setPage("pool")} aria-label="Back"><Icon name="arrowLeft" /></button></div>
+          <div className="card-head"><div><h2 className="card-title">Remove Liquidity</h2><p className="card-subtitle">ETH / USDC LP balance: <span className="num">14.2381</span></p></div></div>
+          <div className="pool-card" style={{boxShadow: "var(--elev-ring)", marginBottom: "16px"}}>
+            <div className="pair-head"><div className="row"><div className="pair-icons"><Coin symbol="ETH"/><Coin symbol="USDC"/></div><div><h3>ETH / USDC</h3><p className="card-subtitle">Selected LP position</p></div></div><strong className="state-value">{percent}%</strong></div>
+          </div>
+          <div className="percent-grid">{[25,50,75,100].map(v => <button key={v} className={percent === v ? "is-active" : ""} onClick={() => setPercent(v)}>{v}%</button>)}</div>
+          <input className="plain-input" value={percent} onChange={e => setPercent(e.target.value)} inputMode="numeric" aria-label="Custom percentage" />
+          <div className="switch-row" style={{marginTop: "16px"}}><div><strong>Use Permit Signature</strong><p className="card-subtitle">Skip pre-approval by signing a permit message.</p></div><button className={"switch " + (usePermit ? "is-on" : "")} onClick={() => setUsePermit(!usePermit)}><span></span></button></div>
+          <div className="info-list">
+            <Info label="You receive ETH" value={(1.92 * percent / 100).toFixed(4)} />
+            <Info label="You receive USDC" value={(6812.44 * percent / 100).toFixed(2)} />
+            <Info label="Price" value="1 ETH = 3,548.15 USDC" />
+            <Info label="Fee tier" value="0.3%" />
+          </div>
+          <button className="btn btn-primary btn-wide" onClick={() => button === "Connect Wallet" ? setConnected(true) : button === "Sign Permit" ? approve("permit") : button === "Approve LP Token" ? approve("lp") : button === "Remove Liquidity" ? setModal("confirmRemove") : null}>{button}</button>
+        </div>
+      </section>;
+    }
+
+    function FarmPage({ connected, setConnected, farms, openFarm }) {
+      return <section className="dex-layout pool-layout" data-od-id="farm-page">
+        <div className="trade-card pool-shell">
+          <div className="card-head">
+            <div><h2 className="card-title">Farm</h2><p className="card-subtitle">Stake LP tokens to earn MOCHI rewards.</p></div>
+            <button className="btn btn-primary" onClick={() => connected ? openFarm(farms[0]) : setConnected(true)}>{connected ? "Stake LP" : "Connect Wallet"}</button>
+          </div>
+          <div className="product-grid">
+            {farms.map(farm => <FarmCard key={farm.id} farm={farm} connected={connected} setConnected={setConnected} openFarm={openFarm} />)}
+          </div>
+        </div>
+      </section>;
+    }
+
+    function FarmCard({ farm, connected, setConnected, openFarm }) {
+      const isStaked = Number(farm.staked) > 0;
+      return <article className="product-card">
+        <div className="product-card-head">
+          <div className="row"><div className="pair-icons"><Coin symbol={farm.pair.split(" / ")[0]} /><Coin symbol={farm.pair.split(" / ")[1]} /></div><div><h3>{farm.pair}</h3><p className="card-subtitle">LP staking farm</p></div></div>
+          <span className="apr-badge">{farm.apr} APR</span>
+        </div>
+        <div className="info-list">
+          <Info label="TVL" value={farm.tvl} />
+          <Info label="Wallet LP" value={connected ? farm.wallet : "—"} />
+          <Info label="Staked LP" value={connected ? farm.staked : "—"} />
+          <Info label="Earned MOCHI" value={connected ? farm.rewards : "—"} />
+        </div>
+        <div className="pool-actions">
+          <button className="btn btn-soft" disabled={!connected || !isStaked}>Claim</button>
+          <button className="btn btn-primary" onClick={() => connected ? openFarm(farm) : setConnected(true)}>{connected ? "Manage" : "Connect"}</button>
+        </div>
+      </article>;
+    }
+
+    function GovernancePage({ connected, setConnected, mochiStaked, proposals, vote, setModal }) {
+      return <section className="dex-layout pool-layout" data-od-id="governance-page">
+        <div className="trade-card pool-shell">
+          <div className="card-head">
+            <div><h2 className="card-title">Governance</h2><p className="card-subtitle">Stake MOCHI to vote on protocol proposals.</p></div>
+            <button className="btn btn-primary" onClick={() => connected ? setModal("stakeMochi") : setConnected(true)}>{connected ? "Stake MOCHI" : "Connect Wallet"}</button>
+          </div>
+          <div className="metric-grid">
+            <Metric label="My staked MOCHI" value={connected ? mochiStaked : "—"} />
+            <Metric label="Voting power" value={connected ? "12,480 votes" : "—"} />
+            <Metric label="Active proposals" value={proposals.filter(item => item.status === "Active").length} />
+            <Metric label="Delegation" value={connected ? "Self" : "—"} />
+          </div>
+          <div style={{marginTop: "16px"}}>
+            {proposals.map(proposal => <ProposalCard key={proposal.id} proposal={proposal} connected={connected} setConnected={setConnected} vote={vote} />)}
+          </div>
+        </div>
+      </section>;
+    }
+
+    function ProposalCard({ proposal, connected, setConnected, vote }) {
+      return <article className="proposal-card">
+        <div className="proposal-top">
+          <div><span className="page-kicker">{proposal.id}</span><h3 style={{marginTop: "4px"}}>{proposal.title}</h3><p className="card-subtitle">Quorum {proposal.quorum} · Ends {proposal.ends}</p></div>
+          <span className="status-chip">{proposal.status}</span>
+        </div>
+        <div className="vote-bars">
+          <VoteBar label="For" value={proposal.forPct} />
+          <VoteBar label="Against" value={proposal.againstPct} tone="against" />
+          <VoteBar label="Abstain" value={proposal.abstainPct} tone="abstain" />
+        </div>
+        <div className="pool-actions">
+          <button className="btn btn-primary" disabled={proposal.status !== "Active"} onClick={() => connected ? vote(proposal) : setConnected(true)}>{connected ? "Vote" : "Connect to vote"}</button>
+        </div>
+      </article>;
+    }
+
+    function VoteBar({ label, value, tone="" }) {
+      return <div className="vote-bar"><span>{label}</span><span className="vote-track"><span className={"vote-fill " + tone} style={{width: `${value}%`}}></span></span><strong className="state-value">{value}%</strong></div>;
+    }
+
+    function TokenModal({ tokens, customTokens, setCustomTokens, chooseToken, close }) {
+      const [query, setQuery] = useState("");
+      const isAddress = /^0x[a-fA-F0-9]{6,40}$/.test(query);
+      const invalidAddress = query.startsWith("0x") && query.length > 4 && !isAddress;
+      const normalizedQuery = query.toLowerCase();
+      const customAlreadyAdded = isAddress && customTokens.some(t => t.address.toLowerCase() === normalizedQuery);
+      const foundToken = isAddress && !customAlreadyAdded ? { symbol: "MOCK", name: "Mock ERC20", balance: "0.00", address: query, decimals: 18, custom: true } : null;
+      const visible = isAddress
+        ? tokens.filter(t => t.address.toLowerCase() === normalizedQuery)
+        : tokens.filter(t => `${t.symbol} ${t.name}`.toLowerCase().includes(query.toLowerCase()));
+      function addCustom() {
+        if (!foundToken) return;
+        if (!customTokens.some(t => t.address.toLowerCase() === foundToken.address.toLowerCase())) setCustomTokens([...customTokens, foundToken]);
+      }
+      function delCustom(address) {
+        setCustomTokens(customTokens.filter(t => t.address !== address));
+      }
+      return <div className="modal-backdrop"><div className="modal-card modal-large">
+        <div className="modal-head"><h2 className="card-title">Select a token</h2><button className="icon-btn" onClick={close}><Icon name="close" /></button></div>
+        <input className="search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search symbol or paste ERC20 address" autoFocus />
+        {invalidAddress && <p className="notice danger" style={{marginTop: "12px"}}>Invalid token address</p>}
+        {foundToken && <div className="token-item" style={{marginTop: "12px"}}><Coin symbol="M" /><div><strong>MOCK</strong><div className="token-name">Mock ERC20 · decimals 18</div></div><button className="mini-btn" onClick={addCustom}>Add</button></div>}
+        {query === "0x0000" && <p className="notice danger" style={{marginTop: "12px"}}>Token not found</p>}
+        <div className="token-list">
+          {visible.map(token => <div className="token-item" key={token.address} onClick={() => chooseToken(token)}><Coin symbol={token.symbol} /><div><strong>{token.symbol}</strong><div className="token-name">{token.name}</div></div><div className="row"><span className="state-value">{token.balance}</span>{token.custom && <button className="mini-btn btn-danger" onClick={(e) => { e.stopPropagation(); delCustom(token.address); }}>Del</button>}</div></div>)}
+        </div>
+      </div></div>;
+    }
+
+    function CreatePositionModal({ close, choose }) {
+      const versions = [
+        ["V2", "Classic constant-product pair", "Fixed 0.3% LP fee, simplest liquidity flow."],
+        ["V3", "Concentrated liquidity pool", "Choose fee tier, full range, or custom price range."],
+        ["V4", "Coming later", "Reserved for hooks and future pool modules."]
+      ];
+      return <div className="modal-backdrop"><div className="modal-card">
+        <div className="modal-head"><h2 className="card-title">Create position</h2><button className="icon-btn" onClick={close}><Icon name="close" /></button></div>
+        <p className="card-subtitle" style={{marginBottom: "16px"}}>Choose the liquidity version before creating a position.</p>
+        <div className="version-list">
+          {versions.map(([version, title, copy]) => <button key={version} className="version-card" disabled={version === "V4"} onClick={() => choose(version)}>
+            <span><strong>{version} · {title}</strong><span className="card-subtitle">{copy}</span></span>
+            {version === "V4" ? <span className="mini-btn">Soon</span> : <Icon name="chevron" />}
+          </button>)}
+        </div>
+      </div></div>;
+    }
+
+    function ImportPositionModal({ tokens, pools, connected, close, addPool }) {
+      const [tokenA, setTokenA] = useState(() => tokens.find(token => token.symbol === "USDT") || null);
+      const [tokenB, setTokenB] = useState(null);
+      const [picker, setPicker] = useState(null);
+      const pairKey = [tokenA?.symbol, tokenB?.symbol].filter(Boolean).sort().join("-");
+      const known = {
+        "DAI-WETH": { id: "import-weth-dai", version: "V2", a: "WETH", b: "DAI", share: "0.18%", lp: "8.9124", depA: "0.7400", depB: "2,621.80", feeTier: "0.3%", address: "0x4d19...Ee02" },
+        "ETH-USDC": { id: "import-eth-usdc", version: "V2", a: "ETH", b: "USDC", share: "0.42%", lp: "14.2381", depA: "1.9200", depB: "6,812.44", feeTier: "0.3%", address: "0x8f21...A7c9" },
+        "USDT-WETH": { id: "import-weth-usdt", version: "V2", a: "WETH", b: "USDT", share: "0.07%", lp: "3.1048", depA: "0.2600", depB: "918.32", feeTier: "0.3%", address: "0x72b4...90Ac" }
+      };
+      const result = known[pairKey] || null;
+      const canSearch = tokenA && tokenB && tokenA.symbol !== tokenB.symbol;
+      const pairAddress = canSearch && result ? result.address : "—";
+      const alreadyImported = result && connected ? pools.some(pool => pool.id === result.id || pool.address === result.address || [pool.a, pool.b].sort().join("-") === [result.a, result.b].sort().join("-")) : false;
+      function chooseImportToken(slot, token) {
+        if (slot === "a") setTokenA(token);
+        if (slot === "b") setTokenB(token);
+        setPicker(null);
+      }
+      return <div className="modal-backdrop"><div className="modal-card modal-large">
+        <div className="modal-head"><h2 className="card-title">Import position</h2><button className="icon-btn" onClick={close}><Icon name="close" /></button></div>
+        <p className="card-subtitle" style={{marginBottom: "16px"}}>Select two tokens to calculate the V2 pair address and check the connected wallet LP balance.</p>
+        <div className="import-token-stack">
+          <ImportTokenBox label="Token A" token={tokenA} onSelect={() => setPicker(picker === "a" ? null : "a")} />
+          <div className="swap-arrow"><Icon name="plus" /></div>
+          <ImportTokenBox label="Token B" token={tokenB} onSelect={() => setPicker(picker === "b" ? null : "b")} />
+        </div>
+        {picker && <div className="inline-token-picker">
+          {tokens.map(token => <button key={token.address} className="token-item" onClick={() => chooseImportToken(picker, token)}><Coin symbol={token.symbol} /><div><strong>{token.symbol}</strong><div className="token-name">{token.name}</div></div><span className="state-value">{token.balance}</span></button>)}
+        </div>}
+        <div className="info-list">
+          <Info label="Calculated pair address" value={pairAddress} />
+        </div>
+        {canSearch && result && <div className="pool-card import-result-card">
+          <div className="import-result-row">
+            <div className="row"><div className="pair-icons"><Coin symbol={result.a}/><Coin symbol={result.b}/></div><div><h3>{result.a} / {result.b}</h3><p className="card-subtitle">LP balance found</p></div></div>
+            <button className={(alreadyImported ? "btn btn-soft" : "btn btn-primary") + " import-result-action"} disabled={alreadyImported} onClick={() => addPool(result)}>{alreadyImported ? "Imported" : "Import"}</button>
+            <div className="import-result-metrics">
+              <div><span className="pool-row-label">Fee tier</span><strong className="pool-row-value">{result.feeTier || "0.3%"}</strong></div>
+              <div><span className="pool-row-label">LP Token balance</span><strong className="pool-row-value">{result.lp}</strong></div>
+            </div>
+          </div>
+        </div>}
+        {tokenA && tokenB && tokenA.symbol === tokenB.symbol && <p className="notice danger" style={{marginTop: "12px"}}>Select two different tokens.</p>}
+        {canSearch && !result && <p className="notice danger" style={{marginTop: "12px"}}>No LP token balance found for this pair.</p>}
+      </div></div>;
+    }
+
+    function ImportTokenBox({ label, token, onSelect }) {
+      return <div className="token-box import-token-box">
+        <div className="token-meta"><span>{label}</span><span className="num">{token ? token.balance : "0.00"}</span></div>
+        <button className="token-select import-token-select" onClick={onSelect}>{token ? <Coin symbol={token.symbol} /> : <Coin muted />}<span>{token ? token.symbol : "Select token"}</span><Icon name="chevron" /></button>
+      </div>;
+    }
+
+    function SettingsModal({ slippage, setSlippage, deadline, setDeadline, expert, setExpert, close }) {
+      return <div className="modal-backdrop"><div className="modal-card">
+        <div className="modal-head"><h2 className="card-title">Settings</h2><button className="icon-btn" onClick={close}><Icon name="close" /></button></div>
+        <p className="card-subtitle" style={{marginBottom: "12px"}}>Slippage tolerance</p>
+        <div className="percent-grid">{["0.1%","0.5%","1.0%","Custom"].map(v => <button key={v} className={slippage === v ? "is-active" : ""} onClick={() => setSlippage(v)}>{v}</button>)}</div>
+        <p className="card-subtitle" style={{marginBottom: "8px"}}>Transaction deadline</p>
+        <input className="plain-input" value={deadline} onChange={e => setDeadline(e.target.value)} /> 
+        <div className="switch-row" style={{marginTop: "16px"}}><div><strong>Expert mode</strong><p className="card-subtitle">Allow high slippage and fewer warnings.</p></div><button className={"switch " + (expert ? "is-on" : "")} onClick={() => setExpert(!expert)}><span></span></button></div>
+        <div className="modal-actions"><button className="btn btn-primary btn-wide" onClick={close}>Save settings</button></div>
+      </div></div>;
+    }
+
+    function StakeLpModal({ farm, connected, setConnected, close, confirm }) {
+      const [mode, setMode] = useState("stake");
+      const [amount, setAmount] = useState("");
+      const available = mode === "stake" ? farm.wallet : farm.staked;
+      const cta = !connected ? "Connect Wallet" : mode === "stake" ? "Stake LP" : "Unstake LP";
+      return <div className="modal-backdrop"><div className="modal-card">
+        <div className="modal-head"><h2 className="card-title">Manage LP stake</h2><button className="icon-btn" onClick={close}><Icon name="close" /></button></div>
+        <div className="pool-card" style={{boxShadow: "var(--elev-ring)", marginBottom: "16px"}}>
+          <div className="pair-head"><div className="row"><div className="pair-icons"><Coin symbol={farm.pair.split(" / ")[0]} /><Coin symbol={farm.pair.split(" / ")[1]} /></div><div><h3>{farm.pair}</h3><p className="card-subtitle">{farm.apr} APR · Earn MOCHI</p></div></div></div>
+        </div>
+        <div className="segmented" style={{marginBottom: "16px"}}>
+          {["stake", "unstake"].map(item => <button key={item} className={mode === item ? "is-active" : ""} onClick={() => setMode(item)}>{item === "stake" ? "Stake" : "Unstake"}</button>)}
+        </div>
+        <div className="token-box">
+          <div className="token-meta"><span>{mode === "stake" ? "Wallet LP" : "Staked LP"}</span><span className="num">{available} <button className="max-btn" onClick={() => setAmount(available)}>Max</button></span></div>
+          <div className="token-row">
+            <div className="token-select"><Coin symbol="LP" /><span>LP</span></div>
+            <input className="amount-input" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.0" inputMode="decimal" />
+          </div>
+        </div>
+        <div className="info-list">
+          <Info label="Pending rewards" value={`${farm.rewards} MOCHI`} />
+          <Info label="Farm APR" value={farm.apr} />
+        </div>
+        <div className="modal-actions"><button className="btn btn-primary btn-wide" disabled={connected && !amount} onClick={() => connected ? confirm(mode, amount) : setConnected(true)}>{cta}</button><button className="btn btn-soft btn-wide" onClick={close}>Cancel</button></div>
+      </div></div>;
+    }
+
+    function StakeMochiModal({ connected, setConnected, mochiStaked, setMochiStaked, close }) {
+      const [amount, setAmount] = useState("");
+      const cta = connected ? "Stake MOCHI" : "Connect Wallet";
+      return <div className="modal-backdrop"><div className="modal-card">
+        <div className="modal-head"><h2 className="card-title">Stake MOCHI</h2><button className="icon-btn" onClick={close}><Icon name="close" /></button></div>
+        <p className="card-subtitle" style={{marginBottom: "16px"}}>Staked MOCHI becomes voting power for active governance proposals.</p>
+        <div className="token-box">
+          <div className="token-meta"><span>Wallet MOCHI</span><span className="num">24,800 <button className="max-btn" onClick={() => setAmount("24800")}>Max</button></span></div>
+          <div className="token-row">
+            <div className="token-select"><Coin symbol="M" /><span>MOCHI</span></div>
+            <input className="amount-input" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.0" inputMode="decimal" />
+          </div>
+        </div>
+        <div className="info-list">
+          <Info label="Currently staked" value={`${mochiStaked} MOCHI`} />
+          <Info label="Voting delay" value="1 block" />
+        </div>
+        <div className="modal-actions"><button className="btn btn-primary btn-wide" disabled={connected && !amount} onClick={() => {
+          if (!connected) return setConnected(true);
+          const current = Number(String(mochiStaked).replace(/,/g, ""));
+          setMochiStaked((current + Number(amount || "0")).toLocaleString());
+          close();
+        }}>{cta}</button><button className="btn btn-soft btn-wide" onClick={close}>Cancel</button></div>
+      </div></div>;
+    }
+
+    function VoteModal({ proposal, connected, setConnected, close }) {
+      const [choice, setChoice] = useState("For");
+      const cta = connected ? "Submit vote" : "Connect Wallet";
+      return <div className="modal-backdrop"><div className="modal-card">
+        <div className="modal-head"><h2 className="card-title">Cast vote</h2><button className="icon-btn" onClick={close}><Icon name="close" /></button></div>
+        <p className="page-kicker">{proposal.id}</p>
+        <h3 style={{marginTop: "4px"}}>{proposal.title}</h3>
+        <div className="percent-grid" style={{gridTemplateColumns: "repeat(3, 1fr)"}}>{["For", "Against", "Abstain"].map(option => <button key={option} className={choice === option ? "is-active" : ""} onClick={() => setChoice(option)}>{option}</button>)}</div>
+        <div className="info-list">
+          <Info label="Voting power" value="12,480 MOCHI" />
+          <Info label="Selected vote" value={choice} />
+          <Info label="Proposal status" value={proposal.status} />
+        </div>
+        <div className="modal-actions"><button className="btn btn-primary btn-wide" onClick={() => connected ? close() : setConnected(true)}>{cta}</button><button className="btn btn-soft btn-wide" onClick={close}>Cancel</button></div>
+      </div></div>;
+    }
+
+    function ConfirmSwap({ fromToken, toToken, amount, close, confirm }) {
+      return <ConfirmShell title="Confirm Swap" close={close} confirm={confirm} cta="Confirm Swap" rows={[["You Pay", `${amount} ${fromToken.symbol}`], ["You Receive", `${(Number(amount) * 3502.14).toFixed(2)} ${toToken.symbol}`], ["Rate", `1 ${fromToken.symbol} = 3,502.14 ${toToken.symbol}`], ["Minimum Received", `${(Number(amount) * 3484.63).toFixed(2)} ${toToken.symbol}`]]} />;
+    }
+    function ConfirmSupply({ liqA, liqB, amount, liquidityMode, feeTier, initialPrice, initialPriceDirection, rangeMode, minPrice, maxPrice, close, confirm }) {
+      const isV3 = liquidityMode === "V3";
+      const currentV3Price = `1 ${liqA.symbol} = 3,548.15 ${liqB.symbol}`;
+      const initialPriceLabel = initialPriceDirection === "quote" ? `1 ${liqA.symbol} = ${initialPrice} ${liqB.symbol}` : `1 ${liqB.symbol} = ${initialPrice} ${liqA.symbol}`;
+      const rows = [[`${liqA.symbol} amount`, `${amount} ${liqA.symbol}`], [`${liqB.symbol} amount`, `${(Number(amount) * 3502.14).toFixed(2)} ${liqB.symbol}`]];
+      if (isV3) rows.push(["Fee tier", feeTier], [initialPrice ? "Initial price" : "Current price", initialPrice ? initialPriceLabel : currentV3Price], ["Range", rangeMode === "full" ? "Full range" : `${minPrice} - ${maxPrice}`], ["Position", "ERC-721 liquidity NFT"]);
+      else rows.push(["Fee tier", "0.3%"], ["LP tokens received", `${(Number(amount) * 7.42).toFixed(4)}`]);
+      return <ConfirmShell title={isV3 ? "Confirm V3 Pool" : "Confirm Supply"} close={close} confirm={confirm} cta={isV3 ? "Create Pool" : "Confirm Supply"} rows={rows} />;
+    }
+    function ConfirmRemove({ percent, usePermit, close, confirm }) {
+      return <ConfirmShell title="Confirm Remove Liquidity" close={close} confirm={confirm} cta="Confirm Remove" rows={[["Pair", "ETH / USDC"], ["Remove", `${percent}%`], ["Method", usePermit ? "Permit Signature" : "LP Token Approval"], ["ETH received", `${(1.92 * percent / 100).toFixed(4)}`], ["USDC received", `${(6812.44 * percent / 100).toFixed(2)}`]]} />;
+    }
+    function ClaimFeesModal({ pool, close, confirm }) {
+      return <ConfirmShell title="Collect Fees" close={close} confirm={confirm} cta="Collect Fees" rows={[["Position", `${pool.a} / ${pool.b}`], ["Fee tier", pool.feeTier || "0.3%"], ["Range", pool.range || "Full range"], [`${pool.a} fees`, pool.feesA || "0.00"], [`${pool.b} fees`, pool.feesB || "0.00"]]} />;
+    }
+    function ConfirmShell({ title, rows, close, confirm, cta }) {
+      return <div className="modal-backdrop"><div className="modal-card"><div className="modal-head"><h2 className="card-title">{title}</h2><button className="icon-btn" onClick={close}><Icon name="close" /></button></div><div className="info-list">{rows.map(([a,b]) => <Info key={a} label={a} value={b} />)}</div><div className="modal-actions"><button className="btn btn-primary btn-wide" onClick={confirm}>{cta}</button><button className="btn btn-soft btn-wide" onClick={close}>Cancel</button></div></div></div>;
+    }
+    function StatusModal({ stage, close, fail }) {
+      const states = stage === "removing" ? ["Waiting for wallet confirmation", "Removing liquidity", "Removed successfully"] : ["Waiting for wallet confirmation", "Transaction submitted", "Transaction confirmed"];
+      return <div className="modal-backdrop"><div className="modal-card"><div className="modal-head"><h2 className="card-title">Transaction Status</h2><button className="icon-btn" onClick={close}><Icon name="close" /></button></div>
+        {stage === "failed" ? <p className="notice danger">Transaction failed. The user rejected the transaction or the mock call reverted.</p> : <div className="status-steps">{states.map((s, i) => <div className="status-step" key={s}><span>{s}</span>{(stage === "waiting" && i === 0) || (stage === "submitted" && i === 1) || (stage === "removing" && i === 1) ? <span className="spinner"></span> : <span className={"tiny-dot " + ((stage === "confirmed" || (stage === "submitted" && i === 0)) ? "ok" : "warn")}></span>}</div>)}</div>}
+        <div className="modal-actions"><button className="btn btn-primary btn-wide" onClick={close}>Done</button><button className="btn btn-soft btn-wide" onClick={fail}>Simulate failure</button></div>
+      </div></div>;
+    }
+
+    function Info({ label, value }) { return <div className="info-line"><span>{label}</span><strong>{value}</strong></div>; }
+    function Metric({ label, value }) { return <div className="metric"><span>{label}</span><strong>{value}</strong></div>; }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
