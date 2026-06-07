@@ -20,6 +20,7 @@ import type { V3PriceDirection, V3RangeMode } from "../pages/AddLiquidityPage";
 
 type TokenTarget = "from" | "to" | "liqA" | "liqB";
 type PoolModal = "createPosition" | "importPosition";
+type AddLiquidityOrigin = "pool" | "pair";
 
 export default function App() {
   const [page, setPage] = useState<PageKey>("swap");
@@ -47,6 +48,7 @@ export default function App() {
   const [removePercent, setRemovePercent] = useState(50);
   const [selector, setSelector] = useState<TokenTarget | null>(null);
   const [poolModal, setPoolModal] = useState<PoolModal | null>(null);
+  const [addLiquidityOrigin, setAddLiquidityOrigin] = useState<AddLiquidityOrigin>("pool");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [slippage, setSlippage] = useState("0.5");
   const [deadline, setDeadline] = useState("20");
@@ -103,6 +105,7 @@ export default function App() {
           onBack={() => setPage("pool")}
           onAdd={() => {
             setLiquidityMode("V2");
+            setAddLiquidityOrigin("pair");
             setPage("add");
           }}
           onRemove={() => setPage("remove")}
@@ -127,7 +130,7 @@ export default function App() {
           onAmountB={setAmountB}
           onTokenA={() => setSelector("liqA")}
           onTokenB={() => setSelector("liqB")}
-          onBack={() => setPage("pool")}
+          onBack={() => setPage(addLiquidityOrigin)}
           onPositionAdded={trackPoolPosition}
           onV3FeeTier={setV3FeeTier}
           onInitialPrice={setInitialPrice}
@@ -155,6 +158,7 @@ export default function App() {
           onClose={() => setPoolModal(null)}
           onChoose={(mode) => {
             setLiquidityMode(mode);
+            setAddLiquidityOrigin("pool");
             setPoolModal(null);
             setPage("add");
           }}
