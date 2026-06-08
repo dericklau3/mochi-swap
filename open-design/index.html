@@ -164,6 +164,14 @@
     .btn-soft { background: color-mix(in oklab, var(--surface-warm), var(--surface) 36%); }
     .btn-danger { color: var(--danger); }
     .btn-wide { width: 100%; min-height: 52px; border-radius: var(--radius-lg); font-size: var(--text-base); }
+    .liquidity-action-btn {
+      width: 42px;
+      min-width: 42px;
+      padding-inline: 0;
+      font-size: 20px;
+      line-height: 1;
+      background: color-mix(in oklab, var(--surface-warm), var(--surface) 36%);
+    }
 
     .mobile-bottom-nav { display: none; }
     .content-shell { min-width: 0; }
@@ -240,6 +248,43 @@
     .info-list { display: grid; gap: var(--space-2); margin: var(--space-4) 0; }
     .info-line { display: flex; justify-content: space-between; gap: var(--space-4); color: var(--muted); font-size: var(--text-sm); }
     .info-line strong { color: var(--fg); font-family: var(--font-mono); font-weight: 700; }
+    .price-info-value {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      text-align: right;
+    }
+    .fees-info-value {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--space-3);
+      text-align: right;
+    }
+    .collect-fees-btn {
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: var(--radius-pill);
+      font-size: var(--text-xs);
+      white-space: nowrap;
+    }
+    .price-toggle-btn {
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-pill);
+      background: color-mix(in oklab, var(--surface-warm), var(--surface) 36%);
+      color: var(--accent);
+      padding: 0;
+    }
+    .price-toggle-btn:hover {
+      border-color: color-mix(in oklab, var(--accent), var(--border) 48%);
+      background: color-mix(in oklab, var(--accent), transparent 90%);
+    }
     .notice { border: 1px solid var(--border); background: color-mix(in oklab, var(--surface-warm), var(--surface) 28%); color: var(--fg-2); border-radius: var(--radius-lg); padding: var(--space-4); font-size: var(--text-sm); }
     .notice.warn { border-color: color-mix(in oklab, var(--warn), var(--border) 58%); color: var(--warn); }
     .notice.danger { border-color: color-mix(in oklab, var(--danger), var(--border) 58%); color: var(--danger); }
@@ -295,6 +340,91 @@
     .percent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); margin: var(--space-4) 0; }
     .percent-grid button { min-height: 42px; border: 1px solid var(--border); border-radius: var(--radius-md); background: color-mix(in oklab, var(--surface), #fbf7ff 20%); font-weight: 800; }
     .percent-grid button.is-active { border-color: var(--accent); color: var(--accent); background: color-mix(in oklab, var(--accent), transparent 91%); }
+    .liquidity-percent-card {
+      display: grid;
+      gap: var(--space-4);
+      margin: 0 0 var(--space-4);
+      padding: var(--space-5);
+      border: 1px solid var(--border-soft);
+      border-radius: 22px;
+      background: linear-gradient(180deg, color-mix(in oklab, var(--surface), #f6efff 30%), var(--surface));
+      box-shadow: var(--elev-ring);
+    }
+    .percent-display {
+      color: var(--fg);
+      font-size: clamp(36px, 7vw, 44px);
+      line-height: .88;
+      letter-spacing: -0.04em;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+    }
+    .drag-percent-wrap {
+      position: relative;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+    }
+    .drag-percent-track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 4px;
+      border-radius: var(--radius-pill);
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent) var(--pct), color-mix(in oklab, var(--accent), transparent 84%) var(--pct), color-mix(in oklab, var(--accent), transparent 84%) 100%);
+      pointer-events: none;
+    }
+    .drag-percent-thumb {
+      position: absolute;
+      top: 50%;
+      left: var(--pct);
+      z-index: 1;
+      width: 22px;
+      height: 22px;
+      border: 3px solid var(--surface);
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent), transparent 38%), 0 8px 18px color-mix(in oklab, var(--accent), transparent 68%);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .drag-percent-input {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 34px;
+      margin: 0;
+      opacity: 0;
+      cursor: grab;
+    }
+    .drag-percent-input:active { cursor: grabbing; }
+    .drag-percent-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-2);
+    }
+    .drag-percent-actions button {
+      min-height: 34px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: color-mix(in oklab, var(--surface), #fbf7ff 24%);
+      color: var(--fg);
+      font-weight: 950;
+      font-size: var(--text-sm);
+      transition: transform var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard);
+    }
+    .drag-percent-actions button:hover {
+      transform: translateY(-1px);
+      border-color: color-mix(in oklab, var(--accent), var(--border) 42%);
+      color: var(--accent);
+    }
+    .drag-percent-actions button.is-active {
+      border-color: color-mix(in oklab, var(--accent), transparent 24%);
+      background: linear-gradient(135deg, color-mix(in oklab, var(--accent), transparent 10%), color-mix(in oklab, #ef61b7, var(--accent) 62%));
+      color: white;
+      box-shadow: 0 10px 22px color-mix(in oklab, var(--accent), transparent 74%);
+    }
     .v3-config { display: grid; gap: var(--space-4); margin-top: var(--space-4); padding: var(--space-4); border: 1px solid var(--border-soft); border-radius: 22px; background: linear-gradient(180deg, color-mix(in oklab, var(--surface), #f6efff 34%), var(--surface)); }
     .fee-grid { grid-template-columns: repeat(3, 1fr); margin-top: var(--space-2); margin-bottom: 0; }
     .v3-step { display: grid; gap: var(--space-2); }
@@ -514,7 +644,7 @@
     const mockPools = [
       { id: "eth-usdc", version: "V2", a: "ETH", b: "USDC", share: "0.42%", lp: "14.2381", depA: "1.9200", depB: "6,812.44", feeTier: "0.3%", address: "0x8f21...A7c9" },
       { id: "weth-dai", version: "V2", a: "WETH", b: "DAI", share: "0.18%", lp: "8.9124", depA: "0.7400", depB: "2,621.80", feeTier: "0.3%", address: "0x4d19...Ee02" },
-      { id: "v3-usdt-usdc", version: "V3", a: "USDT", b: "USDC", share: "0.09%", lp: "Position #4821", depA: "4,200.00", depB: "4,196.80", feeTier: "0.05%", range: "Full range", minPrice: "0", maxPrice: "∞", feesA: "18.42", feesB: "17.95", address: "0x91fe...C308" }
+      { id: "v3-usdt-usdc", version: "V3", a: "USDT", b: "USDC", share: "0.09%", lp: "Position #4821", tokenId: "#4821", depA: "4,200.00", depB: "4,196.80", feeTier: "0.05%", range: "Full range", minPrice: "0", maxPrice: "∞", feesA: "18.42", feesB: "17.95", address: "0x91fe...C308" }
     ];
 
     const farmPools = [
@@ -571,9 +701,8 @@
       const [minPrice, setMinPrice] = useState("3000");
       const [maxPrice, setMaxPrice] = useState("4200");
       const [removePercent, setRemovePercent] = useState(50);
-      const [usePermit, setUsePermit] = useState(true);
       const [statusStage, setStatusStage] = useState("idle");
-      const [approvals, setApprovals] = useState({ swap: false, supplyA: false, supplyB: false, lp: false, permit: false });
+      const [approvals, setApprovals] = useState({ swap: false, supplyA: false, supplyB: false, lp: false });
       const [pools, setPools] = useState(mockPools);
       const [selectedPool, setSelectedPool] = useState(mockPools[0]);
       const [farmPositions, setFarmPositions] = useState(farmPools);
@@ -635,7 +764,7 @@
             {page === "pool" && <PoolPage setPage={setPage} connected={connected} pools={pools} setModal={setModal} setLiquidityMode={setLiquidityMode} openPair={(pool) => { setSelectedPool(pool); setPage("pair"); }} />}
             {page === "pair" && <PairDetailPage pool={selectedPool} setPage={setPage} setModal={setModal} setLiquidityMode={setLiquidityMode} />}
             {page === "add" && <AddLiquidityPage setPage={setPage} connected={connected} setConnected={setConnected} liqA={liqA} liqB={liqB} liqAmount={liqAmount} setLiqAmount={setLiqAmount} openTokenModal={openTokenModal} approvals={approvals} approve={approve} setModal={setModal} liquidityMode={liquidityMode} setLiquidityMode={setLiquidityMode} v3FeeTier={v3FeeTier} setV3FeeTier={setV3FeeTier} initialPrice={initialPrice} setInitialPrice={setInitialPrice} initialPriceDirection={initialPriceDirection} setInitialPriceDirection={setInitialPriceDirection} rangeMode={rangeMode} setRangeMode={setRangeMode} minPrice={minPrice} setMinPrice={setMinPrice} maxPrice={maxPrice} setMaxPrice={setMaxPrice} />}
-            {page === "remove" && <RemoveLiquidityPage setPage={setPage} connected={connected} setConnected={setConnected} usePermit={usePermit} setUsePermit={setUsePermit} percent={removePercent} setPercent={setRemovePercent} approvals={approvals} approve={approve} setModal={setModal} />}
+            {page === "remove" && <RemoveLiquidityPage pool={selectedPool} setPage={setPage} connected={connected} setConnected={setConnected} percent={removePercent} setPercent={setRemovePercent} setModal={setModal} />}
             {page === "farm" && <FarmPage connected={connected} setConnected={setConnected} farms={farmPositions} openFarm={(farm) => { setSelectedFarm(farm); setModal("stakeLp"); }} setModal={setModal} />}
             {page === "governance" && <GovernancePage connected={connected} setConnected={setConnected} mochiStaked={mochiStaked} proposals={proposals} vote={(proposal) => { setSelectedProposal(proposal); setModal("vote"); }} setModal={setModal} />}
           </main>
@@ -652,6 +781,7 @@
               b: liqB.symbol,
               share: "0.64%",
               lp: liquidityMode === "V3" ? "Position #new" : `${(Number(liqAmount || "1.0") * 7.42).toFixed(4)}`,
+              tokenId: liquidityMode === "V3" ? "#new" : undefined,
               depA: Number(liqAmount || "1.0").toFixed(4),
               depB: `${(Number(liqAmount || "1.0") * 3502.14).toFixed(2)}`,
               feeTier: liquidityMode === "V3" ? v3FeeTier : "0.3%",
@@ -669,7 +799,7 @@
             setPage("pair");
             runStatus("waiting");
           }} />}
-          {modal === "confirmRemove" && <ConfirmRemove percent={removePercent} usePermit={usePermit} close={() => setModal(null)} confirm={() => { setPage("pair"); runStatus("removing"); }} />}
+          {modal === "confirmRemove" && <ConfirmRemove pool={selectedPool} percent={removePercent} close={() => setModal(null)} confirm={() => { setPage("pair"); runStatus("removing"); }} />}
           {modal === "claimFees" && <ClaimFeesModal pool={selectedPool} close={() => setModal(null)} confirm={() => runStatus("waiting")} />}
           {modal === "import" && <ImportPositionModal tokens={allTokens} pools={pools} connected={connected} close={() => setModal(null)} addPool={(pool) => {
             setConnected(true);
@@ -714,7 +844,7 @@
           <button className="swap-arrow" onClick={() => { setFromToken(toToken); setToToken(fromToken); }} aria-label="Switch tokens"><Icon name="swap" /></button>
           <TokenBox label="You receive" token={toToken} amount={fromAmount ? (Number(fromAmount || 0) * 3502.14).toFixed(2) : ""} setAmount={() => {}} onSelect={() => openTokenModal("to")} maxValue="" />
           <div className="info-list">
-            <Info label="Rate" value={`1 ${fromToken.symbol} = 3,502.14 ${toToken.symbol}`} />
+            <Info label="Price" value={`1 ${fromToken.symbol} = 3,502.14 ${toToken.symbol}`} />
             <Info label="Price Impact" value="0.08%" />
             <Info label="Minimum Received" value={`${fromAmount ? (Number(fromAmount) * 3484.63).toFixed(2) : "0.00"} ${toToken.symbol}`} />
             <Info label="Slippage Tolerance" value={slippage} />
@@ -740,7 +870,7 @@
     function PoolCard({ pool, setPage, openPair }) {
       return <article className="pool-card">
         <div className="pool-row">
-          <button className="pair-link" onClick={() => openPair(pool)} aria-label={`Open ${pool.a} ${pool.b} pair details`}><div className="pair-icons"><Coin symbol={pool.a}/><Coin symbol={pool.b}/></div><div><h3>{pool.a} / {pool.b}</h3><p className="card-subtitle">{pool.version || "V2"} {pool.version === "V3" ? `· ${pool.feeTier}` : "pair"}</p></div></button>
+          <button className="pair-link" onClick={() => openPair(pool)} aria-label={`Open ${pool.a} ${pool.b} pair details`}><div className="pair-icons"><Coin symbol={pool.a}/><Coin symbol={pool.b}/></div><div><h3>{pool.a} / {pool.b}</h3><p className="card-subtitle">{pool.version || "V2"} pair</p></div></button>
           <div><span className="pool-row-label">Fee tier</span><strong className="pool-row-value">{pool.feeTier || "0.3%"}</strong></div>
           <div><span className="pool-row-label">Range</span><strong className="pool-row-value">{liquidityRangeLabel(pool)}</strong></div>
         </div>
@@ -749,18 +879,23 @@
 
     function PairDetailPage({ pool, setPage, setModal, setLiquidityMode }) {
       const isV3 = pool.version === "V3";
+      const [priceDirection, setPriceDirection] = React.useState("base");
+      const price = 3548.15;
+      const pairPrice = priceDirection === "base"
+        ? `1 ${pool.a} = ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${pool.b}`
+        : `1 ${pool.b} = ${(1 / price).toFixed(8)} ${pool.a}`;
       return <section className="dex-layout pool-layout" data-od-id="pair-detail-page">
         <div className="trade-card pool-shell">
-          <div className="detail-head"><button className="icon-btn back-icon" onClick={() => setPage("pool")} aria-label="Back"><Icon name="arrowLeft" /></button><div className="pool-actions">{isV3 && <button className="btn btn-soft" onClick={() => setModal("claimFees")}>Collect fees</button>}<button className="btn btn-soft" onClick={() => { setLiquidityMode(pool.version || "V2"); setPage("add"); }}>Add</button><button className="btn btn-primary" onClick={() => setPage("remove")}>Remove</button></div></div>
+          <div className="detail-head"><button className="icon-btn back-icon" onClick={() => setPage("pool")} aria-label="Back"><Icon name="arrowLeft" /></button><div className="pool-actions"><button className="btn btn-soft liquidity-action-btn" aria-label="Add liquidity" onClick={() => { setLiquidityMode(pool.version || "V2"); setPage("add"); }}>+</button><button className="btn btn-soft liquidity-action-btn" aria-label="Remove liquidity" onClick={() => setPage("remove")}>-</button></div></div>
           <div className="pair-head"><div className="row"><div className="pair-icons"><Coin symbol={pool.a}/><Coin symbol={pool.b}/></div><div><h2 className="card-title">{pool.a} / {pool.b}</h2><p className="card-subtitle">Pair details</p></div></div><span className="network-pill">{pool.version || "V2"} {isV3 ? pool.feeTier : "Pair"}</span></div>
           <div className="metric-grid">
-            <Metric label="Range" value={liquidityRangeLabel(pool)} /><Metric label="LP Token balance" value={pool.lp} /><Metric label={`${pool.a} deposited`} value={pool.depA} /><Metric label={`${pool.b} deposited`} value={pool.depB} />
+            <Metric label="Range" value={liquidityRangeLabel(pool)} /><Metric label={isV3 ? "Token ID" : "LP Token balance"} value={isV3 ? (pool.tokenId || pool.lp.replace("Position ", "")) : pool.lp} /><Metric label={`${pool.a} deposited`} value={pool.depA} /><Metric label={`${pool.b} deposited`} value={pool.depB} />
           </div>
           <div className="info-list">
             <Info label="Pair address" value={pool.address || "0x9d8a...4e21"} />
             <Info label="Fee tier" value={pool.feeTier || "0.3%"} />
-            {isV3 && <Info label="Unclaimed fees" value={`${pool.feesA || "0.00"} ${pool.a} + ${pool.feesB || "0.00"} ${pool.b}`} />}
-            <Info label="Price" value={`1 ${pool.a} = 3,548.15 ${pool.b}`} />
+            {isV3 && <Info label="Unclaimed fees" value={<span className="fees-info-value"><span>{`${pool.feesA || "0.00"} ${pool.a} + ${pool.feesB || "0.00"} ${pool.b}`}</span><button className="btn btn-soft collect-fees-btn" onClick={() => setModal("claimFees")}>Collect fees</button></span>} />}
+            <Info label="Price" value={<span className="price-info-value"><span>{pairPrice}</span><button className="price-toggle-btn" onClick={() => setPriceDirection(priceDirection === "base" ? "quote" : "base")} aria-label="Switch price direction"><Icon name="swap" /></button></span>} />
           </div>
         </div>
       </section>;
@@ -858,27 +993,60 @@
       </section>;
     }
 
-    function RemoveLiquidityPage({ setPage, connected, setConnected, usePermit, setUsePermit, percent, setPercent, approvals, approve, setModal }) {
-      const button = !connected ? "Connect Wallet" : usePermit && !approvals.permit ? "Sign Permit" : !usePermit && !approvals.lp ? "Approve LP Token" : "Remove Liquidity";
+    function RemoveLiquidityPage({ pool, setPage, connected, setConnected, percent, setPercent, setModal }) {
+      const isV3 = pool.version === "V3";
+      const button = !connected ? "Connect Wallet" : "Remove Liquidity";
+      const tokenId = pool.tokenId || "#4821";
+      const normalizedPercent = clampPercent(percent);
+      const receiveA = (parseAmount(pool.depA) * normalizedPercent / 100).toFixed(4);
+      const receiveB = (parseAmount(pool.depB) * normalizedPercent / 100).toFixed(2);
       return <section className="dex-layout" data-od-id="remove-liquidity-page">
         <div className="trade-card">
           <div className="detail-head"><button className="icon-btn back-icon" onClick={() => setPage("pool")} aria-label="Back"><Icon name="arrowLeft" /></button></div>
-          <div className="card-head"><div><h2 className="card-title">Remove Liquidity</h2><p className="card-subtitle">ETH / USDC LP balance: <span className="num">14.2381</span></p></div></div>
+          <div className="card-head"><div><h2 className="card-title">Remove Liquidity</h2><p className="card-subtitle">{pool.a} / {pool.b} {isV3 ? "Token ID" : "LP balance"}: <span className="num">{isV3 ? tokenId : pool.lp}</span></p></div></div>
           <div className="pool-card" style={{boxShadow: "var(--elev-ring)", marginBottom: "16px"}}>
-            <div className="pair-head"><div className="row"><div className="pair-icons"><Coin symbol="ETH"/><Coin symbol="USDC"/></div><div><h3>ETH / USDC</h3><p className="card-subtitle">Selected LP position</p></div></div><strong className="state-value">{percent}%</strong></div>
+            <div className="pair-head"><div className="row"><div className="pair-icons"><Coin symbol={pool.a}/><Coin symbol={pool.b}/></div><div><h3>{pool.a} / {pool.b}</h3><p className="card-subtitle">Selected {isV3 ? "V3 position" : "V2 pair"}</p></div></div><strong className="state-value">{normalizedPercent}%</strong></div>
           </div>
-          <div className="percent-grid">{[25,50,75,100].map(v => <button key={v} className={percent === v ? "is-active" : ""} onClick={() => setPercent(v)}>{v}%</button>)}</div>
-          <input className="plain-input" value={percent} onChange={e => setPercent(e.target.value)} inputMode="numeric" aria-label="Custom percentage" />
-          <div className="switch-row" style={{marginTop: "16px"}}><div><strong>Use Permit Signature</strong><p className="card-subtitle">Skip pre-approval by signing a permit message.</p></div><button className={"switch " + (usePermit ? "is-on" : "")} onClick={() => setUsePermit(!usePermit)}><span></span></button></div>
+          <PercentSlider percent={normalizedPercent} setPercent={setPercent} />
           <div className="info-list">
-            <Info label="You receive ETH" value={(1.92 * percent / 100).toFixed(4)} />
-            <Info label="You receive USDC" value={(6812.44 * percent / 100).toFixed(2)} />
-            <Info label="Price" value="1 ETH = 3,548.15 USDC" />
-            <Info label="Fee tier" value="0.3%" />
+            <Info label={`You receive ${pool.a}`} value={receiveA} />
+            <Info label={`You receive ${pool.b}`} value={receiveB} />
+            <Info label="Price" value={`1 ${pool.a} = 3,548.15 ${pool.b}`} />
+            <Info label="Fee tier" value={pool.feeTier || "0.3%"} />
           </div>
-          <button className="btn btn-primary btn-wide" onClick={() => button === "Connect Wallet" ? setConnected(true) : button === "Sign Permit" ? approve("permit") : button === "Approve LP Token" ? approve("lp") : button === "Remove Liquidity" ? setModal("confirmRemove") : null}>{button}</button>
+          <button className="btn btn-primary btn-wide" onClick={() => button === "Connect Wallet" ? setConnected(true) : setModal("confirmRemove")}>{button}</button>
         </div>
       </section>;
+    }
+
+    function clampPercent(value) {
+      const next = Number(value);
+      if (!Number.isFinite(next)) return 0;
+      return Math.min(100, Math.max(0, Math.round(next)));
+    }
+
+    function parseAmount(value) {
+      return Number(String(value).replace(/,/g, "")) || 0;
+    }
+
+    function PercentSlider({ percent, setPercent }) {
+      const quickValues = [
+        { label: "25%", value: 25 },
+        { label: "50%", value: 50 },
+        { label: "75%", value: 75 },
+        { label: "Max", value: 100 }
+      ];
+      return <div className="liquidity-percent-card">
+        <div className="percent-display">{percent}%</div>
+        <div className="drag-percent-wrap" style={{"--pct": `${percent}%`}}>
+          <div className="drag-percent-track"></div>
+          <div className="drag-percent-thumb"></div>
+          <input className="drag-percent-input" type="range" min="0" max="100" step="1" value={percent} onChange={e => setPercent(clampPercent(e.target.value))} aria-label="Remove liquidity percentage" />
+        </div>
+        <div className="drag-percent-actions">
+          {quickValues.map(item => <button key={item.value} className={percent === item.value ? "is-active" : ""} onClick={() => setPercent(item.value)}>{item.label}</button>)}
+        </div>
+      </div>;
     }
 
     function FarmPage({ connected, setConnected, farms, openFarm }) {
@@ -1142,7 +1310,7 @@
     }
 
     function ConfirmSwap({ fromToken, toToken, amount, close, confirm }) {
-      return <ConfirmShell title="Confirm Swap" close={close} confirm={confirm} cta="Confirm Swap" rows={[["You Pay", `${amount} ${fromToken.symbol}`], ["You Receive", `${(Number(amount) * 3502.14).toFixed(2)} ${toToken.symbol}`], ["Rate", `1 ${fromToken.symbol} = 3,502.14 ${toToken.symbol}`], ["Minimum Received", `${(Number(amount) * 3484.63).toFixed(2)} ${toToken.symbol}`]]} />;
+      return <ConfirmShell title="Confirm Swap" close={close} confirm={confirm} cta="Confirm Swap" rows={[["You Pay", `${amount} ${fromToken.symbol}`], ["You Receive", `${(Number(amount) * 3502.14).toFixed(2)} ${toToken.symbol}`], ["Price", `1 ${fromToken.symbol} = 3,502.14 ${toToken.symbol}`], ["Minimum Received", `${(Number(amount) * 3484.63).toFixed(2)} ${toToken.symbol}`]]} />;
     }
     function ConfirmSupply({ liqA, liqB, amount, liquidityMode, feeTier, initialPrice, initialPriceDirection, rangeMode, minPrice, maxPrice, close, confirm }) {
       const isV3 = liquidityMode === "V3";
@@ -1153,8 +1321,11 @@
       else rows.push(["Fee tier", "0.3%"], ["LP tokens received", `${(Number(amount) * 7.42).toFixed(4)}`]);
       return <ConfirmShell title={isV3 ? "Confirm V3 Pool" : "Confirm Supply"} close={close} confirm={confirm} cta={isV3 ? "Create Pool" : "Confirm Supply"} rows={rows} />;
     }
-    function ConfirmRemove({ percent, usePermit, close, confirm }) {
-      return <ConfirmShell title="Confirm Remove Liquidity" close={close} confirm={confirm} cta="Confirm Remove" rows={[["Pair", "ETH / USDC"], ["Remove", `${percent}%`], ["Method", usePermit ? "Permit Signature" : "LP Token Approval"], ["ETH received", `${(1.92 * percent / 100).toFixed(4)}`], ["USDC received", `${(6812.44 * percent / 100).toFixed(2)}`]]} />;
+    function ConfirmRemove({ pool, percent, close, confirm }) {
+      const isV3 = pool.version === "V3";
+      const normalizedPercent = clampPercent(percent);
+      const rows = [["Pair", `${pool.a} / ${pool.b}`], [isV3 ? "Token ID" : "LP token balance", isV3 ? (pool.tokenId || "#4821") : pool.lp], ["Remove", `${normalizedPercent}%`], ["Method", isV3 ? "V3 NFT position" : "V2 LP token"], [`${pool.a} received`, `${(parseAmount(pool.depA) * normalizedPercent / 100).toFixed(4)}`], [`${pool.b} received`, `${(parseAmount(pool.depB) * normalizedPercent / 100).toFixed(2)}`]];
+      return <ConfirmShell title="Confirm Remove Liquidity" close={close} confirm={confirm} cta="Confirm Remove" rows={rows} />;
     }
     function ClaimFeesModal({ pool, close, confirm }) {
       return <ConfirmShell title="Collect Fees" close={close} confirm={confirm} cta="Collect Fees" rows={[["Position", `${pool.a} / ${pool.b}`], ["Fee tier", pool.feeTier || "0.3%"], ["Range", pool.range || "Full range"], [`${pool.a} fees`, pool.feesA || "0.00"], [`${pool.b} fees`, pool.feesB || "0.00"]]} />;

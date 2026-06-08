@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ArrowLeftRight } from "lucide-react";
 
 import { formatTokenAmountPlain } from "../../lib/format";
@@ -37,7 +38,7 @@ export function SwapPreview({
   );
 }
 
-export function Info({ label, value }: { label: string; value: string }) {
+export function Info({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="info-line">
       <span>{label}</span>

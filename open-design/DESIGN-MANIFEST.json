@@ -1,0 +1,284 @@
+{
+  "schema": "open-design.design-manifest.v1",
+  "title": "0fa2a888-0107-4c26-9fb0-94c4068e678b",
+  "entryFile": "index.html",
+  "sourceFiles": {
+    "all": [
+      "dswap-dex-prototype.html",
+      "index.html",
+      "mpl0qyx8-drawing-2026-05-25T09-43-36-509Z.png",
+      "mpl0xqof-drawing-2026-05-25T09-48-52-426Z.png",
+      "mpl0znpf-drawing-2026-05-25T09-50-21-885Z.png",
+      "mpl10dpr-drawing-2026-05-25T09-50-55-596Z.png",
+      "mpl18v2i-drawing-2026-05-25T09-57-31-315Z.png",
+      "mpl1bfsw-drawing-2026-05-25T09-59-31-515Z.png",
+      "mpl1cx6e-drawing-2026-05-25T10-00-40-691Z.png",
+      "mpl1njzt-drawing-2026-05-25T10-08-56-814Z.png",
+      "mpl1owdl-drawing-2026-05-25T10-09-59-526Z.png",
+      "mpl1q93o-drawing-2026-05-25T10-11-02-672Z.png",
+      "mpl1w71z-drawing-2026-05-25T10-15-39-955Z.png",
+      "mpl1y1ys-drawing-2026-05-25T10-17-06-673Z.png",
+      "mpl24bef-drawing-2026-05-25T10-21-58-830Z.png",
+      "mpl2fy7a-image.png",
+      "mpl2g3lo-image.png",
+      "mpo40vax-drawing-2026-05-27T13-38-35-748Z.png",
+      "mpo44y9y-drawing-2026-05-27T13-41-46-242Z.png",
+      "mpo46ji3-drawing-2026-05-27T13-43-00-406Z.png",
+      "mpo4bnnu-drawing-2026-05-27T13-46-59-078Z.png",
+      "mpo4gm3b-drawing-2026-05-27T13-50-50-319Z.png",
+      "mpo4hubd-drawing-2026-05-27T13-51-47-634Z.png",
+      "mpo4kh0m-drawing-2026-05-27T13-53-50-369Z.png",
+      "mpo4lwkc-drawing-2026-05-27T13-54-57-177Z.png",
+      "mpo4tgvy-drawing-2026-05-27T14-00-50-094Z.png",
+      "mpo4zlic-drawing-2026-05-27T14-05-36-030Z.png",
+      "mpo55gs4-drawing-2026-05-27T14-10-09-837Z.png",
+      "mpp9ee9o-image.png",
+      "mpp9uir2-image.png",
+      "mppbdyjx-drawing-2026-05-28T09-52-29-958Z.png",
+      "mppbqa4c-drawing-2026-05-28T10-02-04-849Z.png",
+      "mppbuxs2-drawing-2026-05-28T10-05-42-136Z.png",
+      "mppdfa77-drawing-2026-05-28T10-49-30-945Z.png",
+      "mppdiq6k-drawing-2026-05-28T10-52-11-653Z.png",
+      "mpqa87z5-drawing-2026-05-29T02-07-48-797Z.png",
+      "mpqf4nqa-drawing-2026-05-29T04-25-00-676Z.png",
+      "mpqfcvpi-drawing-2026-05-29T04-31-24-286Z.png",
+      "mpqfjyrb-drawing-2026-05-29T04-36-54-822Z.png",
+      "mpqfoegt-drawing-2026-05-29T04-40-21-814Z.png",
+      "mpqfpg30-drawing-2026-05-29T04-41-10-562Z.png",
+      "mpqfyo9p-drawing-2026-05-29T04-48-21-044Z.png",
+      "mpqg4iah-image.png",
+      "mpqg4xca-drawing-2026-05-29T04-53-12-776Z.png",
+      "mpqg9ogg-drawing-2026-05-29T04-56-54-487Z.png",
+      "mpqjuuii-drawing-2026-05-29T06-37-20-931Z.png",
+      "mpqjytmn-drawing-2026-05-29T06-40-26-485Z.png",
+      "mpqlhp2n-image.png",
+      "mpqlig61-drawing-2026-05-29T07-23-41-723Z.png",
+      "mpqlmrna-drawing-2026-05-29T07-27-03-279Z.png",
+      "mpqlsrmt-drawing-2026-05-29T07-31-43-106Z.png",
+      "mpqlwzxa-drawing-2026-05-29T07-35-00-566Z.png",
+      "mpqlyyz9-drawing-2026-05-29T07-36-32-644Z.png",
+      "mpqm5m4z-drawing-2026-05-29T07-41-42-602Z.png",
+      "mpqmgc8h-drawing-2026-05-29T07-50-02-981Z.png",
+      "mpqmgrq4-drawing-2026-05-29T07-50-23-059Z.png"
+    ],
+    "html": [
+      "dswap-dex-prototype.html",
+      "index.html"
+    ],
+    "css": [],
+    "scriptsAndComponents": [],
+    "assets": [
+      "mpl0qyx8-drawing-2026-05-25T09-43-36-509Z.png",
+      "mpl0xqof-drawing-2026-05-25T09-48-52-426Z.png",
+      "mpl0znpf-drawing-2026-05-25T09-50-21-885Z.png",
+      "mpl10dpr-drawing-2026-05-25T09-50-55-596Z.png",
+      "mpl18v2i-drawing-2026-05-25T09-57-31-315Z.png",
+      "mpl1bfsw-drawing-2026-05-25T09-59-31-515Z.png",
+      "mpl1cx6e-drawing-2026-05-25T10-00-40-691Z.png",
+      "mpl1njzt-drawing-2026-05-25T10-08-56-814Z.png",
+      "mpl1owdl-drawing-2026-05-25T10-09-59-526Z.png",
+      "mpl1q93o-drawing-2026-05-25T10-11-02-672Z.png",
+      "mpl1w71z-drawing-2026-05-25T10-15-39-955Z.png",
+      "mpl1y1ys-drawing-2026-05-25T10-17-06-673Z.png",
+      "mpl24bef-drawing-2026-05-25T10-21-58-830Z.png",
+      "mpl2fy7a-image.png",
+      "mpl2g3lo-image.png",
+      "mpo40vax-drawing-2026-05-27T13-38-35-748Z.png",
+      "mpo44y9y-drawing-2026-05-27T13-41-46-242Z.png",
+      "mpo46ji3-drawing-2026-05-27T13-43-00-406Z.png",
+      "mpo4bnnu-drawing-2026-05-27T13-46-59-078Z.png",
+      "mpo4gm3b-drawing-2026-05-27T13-50-50-319Z.png",
+      "mpo4hubd-drawing-2026-05-27T13-51-47-634Z.png",
+      "mpo4kh0m-drawing-2026-05-27T13-53-50-369Z.png",
+      "mpo4lwkc-drawing-2026-05-27T13-54-57-177Z.png",
+      "mpo4tgvy-drawing-2026-05-27T14-00-50-094Z.png",
+      "mpo4zlic-drawing-2026-05-27T14-05-36-030Z.png",
+      "mpo55gs4-drawing-2026-05-27T14-10-09-837Z.png",
+      "mpp9ee9o-image.png",
+      "mpp9uir2-image.png",
+      "mppbdyjx-drawing-2026-05-28T09-52-29-958Z.png",
+      "mppbqa4c-drawing-2026-05-28T10-02-04-849Z.png",
+      "mppbuxs2-drawing-2026-05-28T10-05-42-136Z.png",
+      "mppdfa77-drawing-2026-05-28T10-49-30-945Z.png",
+      "mppdiq6k-drawing-2026-05-28T10-52-11-653Z.png",
+      "mpqa87z5-drawing-2026-05-29T02-07-48-797Z.png",
+      "mpqf4nqa-drawing-2026-05-29T04-25-00-676Z.png",
+      "mpqfcvpi-drawing-2026-05-29T04-31-24-286Z.png",
+      "mpqfjyrb-drawing-2026-05-29T04-36-54-822Z.png",
+      "mpqfoegt-drawing-2026-05-29T04-40-21-814Z.png",
+      "mpqfpg30-drawing-2026-05-29T04-41-10-562Z.png",
+      "mpqfyo9p-drawing-2026-05-29T04-48-21-044Z.png",
+      "mpqg4iah-image.png",
+      "mpqg4xca-drawing-2026-05-29T04-53-12-776Z.png",
+      "mpqg9ogg-drawing-2026-05-29T04-56-54-487Z.png",
+      "mpqjuuii-drawing-2026-05-29T06-37-20-931Z.png",
+      "mpqjytmn-drawing-2026-05-29T06-40-26-485Z.png",
+      "mpqlhp2n-image.png",
+      "mpqlig61-drawing-2026-05-29T07-23-41-723Z.png",
+      "mpqlmrna-drawing-2026-05-29T07-27-03-279Z.png",
+      "mpqlsrmt-drawing-2026-05-29T07-31-43-106Z.png",
+      "mpqlwzxa-drawing-2026-05-29T07-35-00-566Z.png",
+      "mpqlyyz9-drawing-2026-05-29T07-36-32-644Z.png",
+      "mpqm5m4z-drawing-2026-05-29T07-41-42-602Z.png",
+      "mpqmgc8h-drawing-2026-05-29T07-50-02-981Z.png",
+      "mpqmgrq4-drawing-2026-05-29T07-50-23-059Z.png"
+    ]
+  },
+  "screens": [
+    {
+      "file": "dswap-dex-prototype.html",
+      "role": "screen",
+      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+    },
+    {
+      "file": "index.html",
+      "role": "launcher-overview",
+      "implementationNote": "Use this as the navigation/overview entry only; implement each linked screen file as its own route/surface."
+    }
+  ],
+  "screenFilePolicy": {
+    "mode": "screen-file-first",
+    "entryFileRole": "launcher-overview",
+    "rules": [
+      "Each distinct user-facing screen or surface must be delivered and implemented as its own file/route.",
+      "If a landing page is present or requested, keep it in landing.html and do not merge it into the product app screen.",
+      "When multiple HTML screens exist, index.html is a launcher/overview only; it must not be treated as the combined final UI.",
+      "Keep product app screens, landing pages, platform screens, and OS widget surfaces separate in production code."
+    ]
+  },
+  "appModules": [
+    "Identify domain-specific in-app modules from the exported UI; do not reduce them to generic cards.",
+    "For each major module, implement purpose, default/loading/empty/error/success states, and responsive behavior.",
+    "Keep app modules separate from OS home-screen widgets in the production component model."
+  ],
+  "osWidgets": [
+    "If the export includes home-screen, lock-screen, Live Activity, tablet glance, or Android widget surfaces, implement them as platform quick-access surfaces outside the app UI.",
+    "If none are present, do not invent OS widgets unless the product requirements request them."
+  ],
+  "landingPage": {
+    "detection": "Inspect files and screen names for a marketing/landing page surface. If present, keep it separate from product app screens.",
+    "requiredSections": [
+      "hero",
+      "value props",
+      "product proof/screenshots",
+      "feature proof",
+      "CTA"
+    ]
+  },
+  "tokens": {
+    "source": [
+      "index.html"
+    ],
+    "required": [
+      "background",
+      "surface",
+      "foreground",
+      "muted text",
+      "border",
+      "accent",
+      "radius",
+      "shadow",
+      "spacing",
+      "type scale",
+      "motion"
+    ],
+    "note": "Extract/freeze tokens before framework implementation so coding tools do not substitute default theme colors or typography."
+  },
+  "interactions": {
+    "source": [
+      "index.html"
+    ],
+    "requiredStates": [
+      "default",
+      "hover",
+      "focus",
+      "active",
+      "disabled",
+      "loading",
+      "empty",
+      "error",
+      "success"
+    ],
+    "requiredBehaviors": [
+      "forms/validation where present",
+      "tabs/filters where present",
+      "dialogs/sheets/drawers where present",
+      "copy/generate/share actions where present",
+      "player or quick controls where present"
+    ],
+    "note": "If the prototype is static, derive missing behavior from visible controls and document it before coding."
+  },
+  "responsiveViewports": [
+    {
+      "name": "mobile-compact",
+      "width": 360,
+      "height": 800,
+      "category": "mobile",
+      "mustAvoidHorizontalScroll": true
+    },
+    {
+      "name": "mobile-standard",
+      "width": 390,
+      "height": 844,
+      "category": "mobile",
+      "mustAvoidHorizontalScroll": true
+    },
+    {
+      "name": "mobile-large",
+      "width": 430,
+      "height": 932,
+      "category": "mobile",
+      "mustAvoidHorizontalScroll": true
+    },
+    {
+      "name": "foldable-small-tablet",
+      "width": 600,
+      "height": 960,
+      "category": "foldable-tablet",
+      "mustAvoidHorizontalScroll": true
+    },
+    {
+      "name": "tablet-portrait",
+      "width": 820,
+      "height": 1180,
+      "category": "tablet",
+      "mustAvoidHorizontalScroll": true
+    },
+    {
+      "name": "tablet-landscape",
+      "width": 1024,
+      "height": 768,
+      "category": "tablet",
+      "mustAvoidHorizontalScroll": true
+    },
+    {
+      "name": "laptop",
+      "width": 1366,
+      "height": 768,
+      "category": "desktop",
+      "mustAvoidHorizontalScroll": true
+    },
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "category": "desktop",
+      "mustAvoidHorizontalScroll": true
+    },
+    {
+      "name": "wide",
+      "width": 1920,
+      "height": 1080,
+      "category": "wide",
+      "mustAvoidHorizontalScroll": true
+    }
+  ],
+  "implementationChecklist": [
+    "Open entryFile first and map screens, modules, tokens, and interactions.",
+    "Extract tokens before writing framework components.",
+    "Implement app-specific modules with real states instead of generic card grids.",
+    "Preserve or rebuild JS interactions for meaningful UX actions.",
+    "Validate screenshots at desktop/tablet/mobile viewports with no horizontal overflow.",
+    "Keep landing pages, in-app modules, and OS widgets as separate implementation surfaces."
+  ]
+}
