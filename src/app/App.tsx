@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Token } from "../types/token";
+import type { Token, TrackedPoolPosition } from "../types/token";
 import { defaultPoolTokens, defaultTokens } from "../lib/tokens";
 import { loadCustomTokens, mergeCustomToken, saveCustomTokens } from "../lib/customTokens";
-import { hasTrackedTokenPair, isPairTracked, loadPoolPositions, savePoolPositions, upsertPoolPosition } from "../lib/poolPositions";
+import { isPairTracked, loadPoolPositions, mergePoolPositionCandidates, savePoolPositions, upsertPoolPosition } from "../lib/poolPositions";
 import { AppLayout } from "../components/layout/AppLayout";
 import type { PageKey } from "../pages/types";
 import { TokenSelector } from "../components/token/TokenSelector";
@@ -17,29 +17,39 @@ import { ImportPositionModal } from "../components/liquidity/ImportPositionModal
 import { MessageProvider } from "../components/ui/Message";
 import type { Address } from "viem";
 import type { V3PriceDirection, V3RangeMode } from "../pages/AddLiquidityPage";
+import { getV3FeeOption, v3FeeOptions } from "../lib/v3Routing";
+import { getAddLiquidityRoute, getPageFromUrl, getPageHash, getPairDetailHash, getPairDetailRoute, getRemoveLiquidityHash, getRemoveLiquidityRoute, type AddLiquidityRoute, type PairDetailRoute } from "../lib/appRouting";
 
 type TokenTarget = "from" | "to" | "liqA" | "liqB";
 type PoolModal = "createPosition" | "importPosition";
 type AddLiquidityOrigin = "pool" | "pair";
 
 export default function App() {
-  const [page, setPage] = useState<PageKey>("swap");
+  const initialAddLiquidityRoute = getAddLiquidityRoute(window.location);
+  const initialPairDetailRoute = getPairDetailRoute(window.location);
+  const initialRemoveLiquidityRoute = getRemoveLiquidityRoute(window.location);
+  const [page, setPage] = useState<PageKey>(() => getPageFromUrl(window.location));
   const [customTokens, setCustomTokens] = useState<Token[]>(() => loadCustomTokens());
   const [poolPositions, setPoolPositions] = useState(() => loadPoolPositions());
   const tokens = useMemo(() => [...defaultTokens, ...customTokens], [customTokens]);
   const visiblePoolPositions = useMemo(() => {
     const defaultPosition = { pairAddress: "0x0000000000000000000000000000000000000000" as Address, tokenA: defaultPoolTokens[0], tokenB: defaultPoolTokens[1] };
-    return hasTrackedTokenPair(poolPositions, defaultPoolTokens[0], defaultPoolTokens[1]) ? poolPositions : [defaultPosition, ...poolPositions];
+    const defaultV3Positions = v3FeeOptions.map((option) => ({ ...defaultPosition, protocol: "V3" as const, fee: option.fee }));
+    return mergePoolPositionCandidates([defaultPosition, ...defaultV3Positions], poolPositions);
   }, [poolPositions]);
   const [fromToken, setFromToken] = useState(defaultPoolTokens[0]);
   const [toToken, setToToken] = useState(defaultPoolTokens[1]);
-  const [liqA, setLiqA] = useState(defaultPoolTokens[0]);
-  const [liqB, setLiqB] = useState(defaultPoolTokens[1]);
+  const initialOpenedPosition = resolveAddLiquidityPosition(initialAddLiquidityRoute, tokens)
+    ?? resolvePairDetailPosition(initialRemoveLiquidityRoute, tokens)
+    ?? resolvePairDetailPosition(initialPairDetailRoute, tokens);
+  const [liqA, setLiqA] = useState(() => initialOpenedPosition.tokenA);
+  const [liqB, setLiqB] = useState(() => initialOpenedPosition.tokenB);
   const [swapAmount, setSwapAmount] = useState("");
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
-  const [liquidityMode, setLiquidityMode] = useState<LiquidityMode>("V2");
-  const [v3FeeTier, setV3FeeTier] = useState("0.3%");
+  const [liquidityMode, setLiquidityMode] = useState<LiquidityMode>(initialAddLiquidityRoute.mode);
+  const [openedPosition, setOpenedPosition] = useState<TrackedPoolPosition>(() => initialOpenedPosition);
+  const [v3FeeTier, setV3FeeTier] = useState(() => v3FeeOptions.find((option) => option.fee === initialAddLiquidityRoute.fee)?.label ?? "0.3%");
   const [initialPrice, setInitialPrice] = useState("");
   const [initialPriceDirection, setInitialPriceDirection] = useState<V3PriceDirection>("quote");
   const [rangeMode, setRangeMode] = useState<V3RangeMode>("full");
@@ -61,8 +71,105 @@ export default function App() {
     savePoolPositions(poolPositions);
   }, [poolPositions]);
 
-  const trackPoolPosition = useCallback((tokenA: Token, tokenB: Token, pairAddress: Address) => {
-    setPoolPositions((current) => isPairTracked(current, pairAddress) ? current : upsertPoolPosition(current, { tokenA, tokenB, pairAddress }));
+  useEffect(() => {
+    const syncPageFromUrl = () => {
+      const nextPage = getPageFromUrl(window.location);
+      setPage(nextPage);
+      if (nextPage === "pair") {
+        const nextPosition = resolvePairDetailPosition(getPairDetailRoute(window.location), tokens);
+        setOpenedPosition(nextPosition);
+        setLiqA(nextPosition.tokenA);
+        setLiqB(nextPosition.tokenB);
+        setLiquidityMode(nextPosition.protocol ?? "V2");
+        if (nextPosition.fee) {
+          setV3FeeTier(v3FeeOptions.find((option) => option.fee === nextPosition.fee)?.label ?? "0.3%");
+        }
+      }
+      if (nextPage === "remove") {
+        const nextPosition = resolvePairDetailPosition(getRemoveLiquidityRoute(window.location), tokens);
+        setOpenedPosition(nextPosition);
+        setLiqA(nextPosition.tokenA);
+        setLiqB(nextPosition.tokenB);
+        setLiquidityMode(nextPosition.protocol ?? "V2");
+        if (nextPosition.fee) {
+          setV3FeeTier(v3FeeOptions.find((option) => option.fee === nextPosition.fee)?.label ?? "0.3%");
+        }
+      }
+      if (nextPage === "add") {
+        const addLiquidityRoute = getAddLiquidityRoute(window.location);
+        setLiquidityMode(addLiquidityRoute.mode);
+        const addPosition = resolveAddLiquidityPosition(addLiquidityRoute, tokens);
+        if (addPosition) {
+          setOpenedPosition(addPosition);
+          setLiqA(addPosition.tokenA);
+          setLiqB(addPosition.tokenB);
+          setAddLiquidityOrigin("pair");
+        }
+        if (addLiquidityRoute.fee) {
+          setV3FeeTier(v3FeeOptions.find((option) => option.fee === addLiquidityRoute.fee)?.label ?? "0.3%");
+        }
+      }
+    };
+    window.addEventListener("hashchange", syncPageFromUrl);
+    window.addEventListener("popstate", syncPageFromUrl);
+    return () => {
+      window.removeEventListener("hashchange", syncPageFromUrl);
+      window.removeEventListener("popstate", syncPageFromUrl);
+    };
+  }, [tokens]);
+
+  const navigateToPage = useCallback((nextPage: PageKey, addLiquidity?: AddLiquidityRoute) => {
+    const nextHash = getPageHash(nextPage, addLiquidity);
+    if (window.location.hash !== nextHash) {
+      window.history.pushState(null, "", nextHash);
+    }
+    setPage(nextPage);
+  }, []);
+
+  const updateV3FeeTier = useCallback((feeTier: string) => {
+    const option = getV3FeeOption(feeTier);
+    setV3FeeTier(option.label);
+    window.history.replaceState(null, "", getPageHash("add", { mode: "V3", fee: option.fee }));
+  }, []);
+
+  const openPairDetail = useCallback((position: TrackedPoolPosition) => {
+    setOpenedPosition(position);
+    setLiqA(position.tokenA);
+    setLiqB(position.tokenB);
+    setLiquidityMode(position.protocol ?? "V2");
+    if (position.fee) setV3FeeTier(v3FeeOptions.find((option) => option.fee === position.fee)?.label ?? "0.3%");
+    const nextHash = getPairDetailHash({
+      tokenA: position.tokenA.address,
+      tokenB: position.tokenB.address,
+      protocol: position.protocol ?? "V2",
+      fee: position.fee,
+      tokenId: position.tokenId
+    });
+    if (window.location.hash !== nextHash) {
+      window.history.pushState(null, "", nextHash);
+    }
+    setPage("pair");
+  }, []);
+
+  const openRemoveLiquidity = useCallback((position: TrackedPoolPosition) => {
+    setOpenedPosition(position);
+    setLiqA(position.tokenA);
+    setLiqB(position.tokenB);
+    const nextHash = getRemoveLiquidityHash({
+      tokenA: position.tokenA.address,
+      tokenB: position.tokenB.address,
+      protocol: position.protocol ?? "V2",
+      fee: position.fee,
+      tokenId: position.tokenId
+    });
+    if (window.location.hash !== nextHash) {
+      window.history.pushState(null, "", nextHash);
+    }
+    setPage("remove");
+  }, []);
+
+  const trackPoolPosition = useCallback((tokenA: Token, tokenB: Token, pairAddress: Address, protocol: "V2" | "V3" = "V2", fee?: number) => {
+    setPoolPositions((current) => isPairTracked(current, pairAddress) ? current : upsertPoolPosition(current, { tokenA, tokenB, pairAddress, protocol, fee }));
   }, []);
 
   function chooseToken(token: Token) {
@@ -75,7 +182,7 @@ export default function App() {
 
   return (
     <MessageProvider>
-      <AppLayout page={page} onPageChange={setPage}>
+      <AppLayout page={page} onPageChange={navigateToPage}>
       {page === "swap" ? (
         <SwapPage
           from={fromToken}
@@ -93,22 +200,29 @@ export default function App() {
           onSettings={() => setSettingsOpen(true)}
         />
       ) : null}
-      {page === "pool" ? <PoolPage positions={visiblePoolPositions} onCreate={() => setPoolModal("createPosition")} onImport={() => setPoolModal("importPosition")} onTrack={trackPoolPosition} onOpen={(tokenA, tokenB) => {
-        setLiqA(tokenA);
-        setLiqB(tokenB);
-        setPage("pair");
-      }} /> : null}
+      {page === "pool" ? <PoolPage positions={visiblePoolPositions} onCreate={() => setPoolModal("createPosition")} onImport={() => setPoolModal("importPosition")} onTrack={trackPoolPosition} onOpen={openPairDetail} /> : null}
       {page === "pair" ? (
         <PairDetailPage
           tokenA={liqA}
           tokenB={liqB}
-          onBack={() => setPage("pool")}
+          protocol={openedPosition.protocol ?? "V2"}
+          fee={openedPosition.fee}
+          tokenId={openedPosition.tokenId}
+          onBack={() => navigateToPage("pool")}
           onAdd={() => {
-            setLiquidityMode("V2");
+            setLiquidityMode(openedPosition.protocol ?? "V2");
             setAddLiquidityOrigin("pair");
-            setPage("add");
+            setAmountA("");
+            setAmountB("");
+            navigateToPage("add", {
+              mode: openedPosition.protocol ?? "V2",
+              fee: openedPosition.fee,
+              tokenA: openedPosition.protocol === "V3" ? openedPosition.tokenA.address : undefined,
+              tokenB: openedPosition.protocol === "V3" ? openedPosition.tokenB.address : undefined,
+              tokenId: openedPosition.protocol === "V3" ? openedPosition.tokenId : undefined
+            });
           }}
-          onRemove={() => setPage("remove")}
+          onRemove={() => openRemoveLiquidity(openedPosition)}
         />
       ) : null}
       {page === "add" ? (
@@ -121,6 +235,7 @@ export default function App() {
           deadline={deadline}
           liquidityMode={liquidityMode}
           v3FeeTier={v3FeeTier}
+          positionTokenId={liquidityMode === "V3" ? openedPosition.tokenId : undefined}
           initialPrice={initialPrice}
           initialPriceDirection={initialPriceDirection}
           rangeMode={rangeMode}
@@ -130,9 +245,9 @@ export default function App() {
           onAmountB={setAmountB}
           onTokenA={() => setSelector("liqA")}
           onTokenB={() => setSelector("liqB")}
-          onBack={() => setPage(addLiquidityOrigin)}
+          onBack={() => addLiquidityOrigin === "pair" ? openPairDetail(openedPosition) : navigateToPage("pool")}
           onPositionAdded={trackPoolPosition}
-          onV3FeeTier={setV3FeeTier}
+          onV3FeeTier={updateV3FeeTier}
           onInitialPrice={setInitialPrice}
           onInitialPriceDirection={setInitialPriceDirection}
           onRangeMode={setRangeMode}
@@ -140,7 +255,7 @@ export default function App() {
           onMaxPrice={setMaxPrice}
         />
       ) : null}
-      {page === "remove" ? <RemoveLiquidityPage tokenA={liqA} tokenB={liqB} percent={removePercent} onPercent={setRemovePercent} onBack={() => setPage("pair")} /> : null}
+      {page === "remove" ? <RemoveLiquidityPage tokenA={liqA} tokenB={liqB} protocol={openedPosition.protocol ?? "V2"} fee={openedPosition.fee} tokenId={openedPosition.tokenId} percent={removePercent} onPercent={setRemovePercent} onBack={() => openPairDetail(openedPosition)} /> : null}
       {page === "farm" ? <FarmPage /> : null}
       {page === "governance" ? <GovernancePage /> : null}
 
@@ -160,7 +275,10 @@ export default function App() {
             setLiquidityMode(mode);
             setAddLiquidityOrigin("pool");
             setPoolModal(null);
-            setPage("add");
+            navigateToPage("add", {
+              mode,
+              fee: mode === "V3" ? v3FeeOptions.find((option) => option.label === v3FeeTier)?.fee : undefined
+            });
           }}
         />
       ) : null}
@@ -171,12 +289,14 @@ export default function App() {
           defaultB={liqB}
           trackedPositions={visiblePoolPositions}
           onClose={() => setPoolModal(null)}
+          onAddCustom={(token) => setCustomTokens((prev) => mergeCustomToken(prev, token))}
+          onRemoveCustom={(token) => setCustomTokens((prev) => prev.filter((item) => item.address.toLowerCase() !== token.address.toLowerCase()))}
           onImport={(tokenA, tokenB, pairAddress) => {
             trackPoolPosition(tokenA, tokenB, pairAddress);
             setLiqA(tokenA);
             setLiqB(tokenB);
             setPoolModal(null);
-            setPage("pool");
+            navigateToPage("pool");
           }}
         />
       ) : null}
@@ -228,4 +348,41 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function VoteBar({ label, value, tone = "" }: { label: string; value: number; tone?: string }) {
   return <div className="vote-bar"><span>{label}</span><span className="vote-track"><span className={`vote-fill ${tone}`} style={{ width: `${value}%` }} /></span><strong className="state-value">{value}%</strong></div>;
+}
+
+function resolvePairDetailPosition(route: PairDetailRoute | undefined, tokens: Token[]): TrackedPoolPosition {
+  const fallback: TrackedPoolPosition = {
+    pairAddress: "0x0000000000000000000000000000000000000000" as Address,
+    tokenA: defaultPoolTokens[0],
+    tokenB: defaultPoolTokens[1],
+    protocol: "V2"
+  };
+  if (!route) return fallback;
+
+  const tokenA = tokens.find((token) => token.address.toLowerCase() === route.tokenA.toLowerCase());
+  const tokenB = tokens.find((token) => token.address.toLowerCase() === route.tokenB.toLowerCase());
+  if (!tokenA || !tokenB) return fallback;
+  return {
+    pairAddress: "0x0000000000000000000000000000000000000000" as Address,
+    tokenA,
+    tokenB,
+    protocol: route.protocol,
+    fee: route.fee,
+    tokenId: route.tokenId
+  };
+}
+
+function resolveAddLiquidityPosition(route: AddLiquidityRoute, tokens: Token[]): TrackedPoolPosition | undefined {
+  if (route.mode !== "V3" || !route.tokenA || !route.tokenB || route.tokenId === undefined) return undefined;
+  const tokenA = tokens.find((token) => token.address.toLowerCase() === route.tokenA?.toLowerCase());
+  const tokenB = tokens.find((token) => token.address.toLowerCase() === route.tokenB?.toLowerCase());
+  if (!tokenA || !tokenB) return undefined;
+  return {
+    pairAddress: "0x0000000000000000000000000000000000000000" as Address,
+    tokenA,
+    tokenB,
+    protocol: "V3",
+    fee: route.fee,
+    tokenId: route.tokenId
+  };
 }

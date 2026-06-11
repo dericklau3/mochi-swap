@@ -26,6 +26,15 @@ export function upsertPoolPosition(positions: TrackedPoolPosition[], position: T
   return [...next, normalized];
 }
 
+export function mergePoolPositionCandidates(defaults: TrackedPoolPosition[], tracked: TrackedPoolPosition[]) {
+  return [...tracked, ...defaults].reduce<TrackedPoolPosition[]>((result, position) => {
+    const normalized = normalizePoolPosition(position);
+    if (!normalized) return result;
+    if (result.some((item) => isSamePoolPosition(item, normalized))) return result;
+    return [...result, normalized];
+  }, []);
+}
+
 export function hasTrackedTokenPair(positions: TrackedPoolPosition[], tokenA: Token, tokenB: Token) {
   return positions.some((position) => isSameTokenPair(position.tokenA, position.tokenB, tokenA, tokenB));
 }
@@ -45,6 +54,8 @@ function normalizePoolPosition(position: TrackedPoolPosition) {
 }
 
 function isSamePoolPosition(a: TrackedPoolPosition, b: TrackedPoolPosition) {
+  if ((a.protocol ?? "V2") !== (b.protocol ?? "V2")) return false;
+  if ((a.fee ?? 0) !== (b.fee ?? 0)) return false;
   if (a.pairAddress !== zeroAddress && b.pairAddress !== zeroAddress) {
     return a.pairAddress.toLowerCase() === b.pairAddress.toLowerCase();
   }

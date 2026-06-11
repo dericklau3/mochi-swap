@@ -3,30 +3,34 @@ import type { Token } from "../../types/token";
 import { useMulticallPairInfo } from "../../hooks/useMulticallPairInfo";
 import { useApproveToken } from "../../hooks/useApproveToken";
 import { useRemoveLiquidity } from "../../hooks/useRemoveLiquidity";
+import { useRemoveV3Liquidity } from "../../hooks/useRemoveV3Liquidity";
 import { useTransactionMessage } from "../../hooks/useTransactionMessage";
-import { erc20Abi, uniswapV2PairAbi } from "../../lib/abis";
+import { useV3PoolInfo } from "../../hooks/useV3PoolInfo";
+import { useV3Position } from "../../hooks/useV3Position";
 import { routerAddress } from "../../lib/contracts";
 import { calculateLiquidityPosition, formatPoolPrice, getPairReserves } from "../../lib/ammMath";
 import { formatTokenAmountFixed } from "../../lib/format";
-import { getReadableError } from "../../lib/errors";
-import { buildLiquidityPermitTypedData, parsePermitSignature } from "../../lib/permit";
+import { isTargetChainId } from "../../lib/network";
+import { calculateV3RemovalAmounts, getSqrtRatioAtTick, sortV3Tokens } from "../../lib/v3Routing";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Info } from "../swap/SwapPreview";
 import { TokenIcon } from "../token/TokenIcon";
 import { useState } from "react";
 import type { CSSProperties } from "react";
-import { useAccount, useChainId, usePublicClient, useSignTypedData } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 
-export function RemoveLiquidityForm({ tokenA, tokenB, percent, onPercent, onBack }: { tokenA: Token; tokenB: Token; percent: number; onPercent: (value: number) => void; onBack: () => void }) {
-  const { address, isConnected } = useAccount();
+export function RemoveLiquidityForm({ tokenA, tokenB, protocol = "V2", fee, tokenId, percent, onPercent, onBack }: { tokenA: Token; tokenB: Token; protocol?: "V2" | "V3"; fee?: number; tokenId?: bigint; percent: number; onPercent: (value: number) => void; onBack: () => void }) {
+  const { isConnected } = useAccount();
   const chainId = useChainId();
-  const publicClient = usePublicClient();
-  const signPermit = useSignTypedData();
   const [priceDirection, setPriceDirection] = useState<"base" | "quote">("base");
   const pair = useMulticallPairInfo(tokenA, tokenB);
+  const v3PositionQuery = useV3Position(tokenId);
+  const v3Position = v3PositionQuery.data;
+  const v3Pool = useV3PoolInfo(tokenA, tokenB, fee ?? 3000);
   const approve = useApproveToken(pair.data?.address ?? undefined, routerAddress, true);
   const remove = useRemoveLiquidity(tokenA, tokenB);
+  const removeV3 = useRemoveV3Liquidity();
   useTransactionMessage({
     hash: approve.hash,
     isSuccess: approve.isSuccess,
@@ -42,10 +46,11 @@ export function RemoveLiquidityForm({ tokenA, tokenB, percent, onPercent, onBack
     failureTitle: "Remove liquidity failed"
   });
   useTransactionMessage({
-    isSuccess: false,
-    readableError: signPermit.error ? getReadableError(signPermit.error) : undefined,
-    successTitle: "Permit signed",
-    failureTitle: "Permit signature failed"
+    hash: removeV3.hash,
+    isSuccess: removeV3.isSuccess,
+    readableError: removeV3.readableError,
+    successTitle: "V3 liquidity removed",
+    failureTitle: "Remove V3 liquidity failed"
   });
   const normalizedPercent = clampPercent(percent);
   const lpBalance = pair.data?.lpBalance ?? 0n;
@@ -58,39 +63,32 @@ export function RemoveLiquidityForm({ tokenA, tokenB, percent, onPercent, onBack
       ? formatPoolPrice(tokenA, tokenB, reserves.reserveA, reserves.reserveB)
       : formatPoolPrice(tokenB, tokenA, reserves.reserveB, reserves.reserveA);
   const needsApproval = (pair.data?.lpAllowance ?? 0n) < lpAmount && lpAmount > 0n;
-  const cta = !isConnected ? "Connect Wallet" : !pair.data?.address ? "Pair not found" : remove.isPending ? "Pending" : "Remove Liquidity";
-
-  async function removeWithPermit() {
-    if (!address || !publicClient || !pair.data?.address || lpAmount === 0n) return;
-    try {
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 20 * 60);
-      const [nonce, lpName] = await Promise.all([
-        publicClient.readContract({ address: pair.data.address, abi: uniswapV2PairAbi, functionName: "nonces", args: [address] }) as Promise<bigint>,
-        publicClient.readContract({ address: pair.data.address, abi: erc20Abi, functionName: "name" }).catch(() => "Uniswap V2") as Promise<string>
-      ]);
-      const signature = await signPermit.signTypedDataAsync(buildLiquidityPermitTypedData({
-        chainId,
-        pairAddress: pair.data.address,
-        owner: address,
-        spender: routerAddress,
-        value: lpAmount,
-        nonce,
-        deadline,
-        name: lpName
-      }));
-      remove.removeLiquidityWithPermit(lpAmount, {
-        ...parsePermitSignature(signature),
-        approveMax: false,
-        deadline
-      });
-    } catch {
-      // Wagmi exposes signature errors through signPermit.error for the message toast.
-    }
-  }
+  const sortedV3Tokens = sortV3Tokens(tokenA, tokenB);
+  const v3RemovalAmounts = v3Position && v3Pool.data?.sqrtPriceX96
+    ? calculateV3RemovalAmounts({
+        liquidity: v3Position.liquidity,
+        percent: normalizedPercent,
+        sqrtPriceX96: v3Pool.data.sqrtPriceX96,
+        sqrtRatioAX96: getSqrtRatioAtTick(v3Position.tickLower),
+        sqrtRatioBX96: getSqrtRatioAtTick(v3Position.tickUpper),
+        tokensOwed0: v3Position.tokensOwed0,
+        tokensOwed1: v3Position.tokensOwed1,
+        aIsToken0: sortedV3Tokens.aIsToken0
+      })
+    : undefined;
+  const v3LiquidityAmount = v3RemovalAmounts?.liquidity ?? 0n;
+  const v3AmountsLoading = v3PositionQuery.isLoading || v3Pool.isLoading;
+  const isV3 = protocol === "V3";
+  const isCorrectChain = isTargetChainId(chainId);
+  const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? "Switch to BSC Testnet" : isV3 && !v3Position ? "Position not found" : !isV3 && !pair.data?.address ? "Pair not found" : !isV3 && needsApproval ? "Approve LP" : remove.isPending || removeV3.isPending ? "Pending" : "Remove Liquidity";
 
   function submit() {
+    if (isV3) {
+      if (v3Position) removeV3.removeLiquidity(v3Position, normalizedPercent);
+      return;
+    }
     if (needsApproval) {
-      void removeWithPermit();
+      approve.approve(lpAmount);
       return;
     }
     remove.removeLiquidity(lpAmount);
@@ -101,7 +99,7 @@ export function RemoveLiquidityForm({ tokenA, tokenB, percent, onPercent, onBack
       <div className="detail-head">
         <Button className="icon-btn back-icon" aria-label="Back" onClick={onBack}>←</Button>
       </div>
-      <div className="card-head"><div><h2 className="card-title">Remove Liquidity</h2><p className="card-subtitle">{tokenA.symbol} / {tokenB.symbol} LP balance: <span className="num">{formatTokenAmountFixed(lpBalance, 18)}</span></p></div></div>
+      <div className="card-head"><div><h2 className="card-title">Remove Liquidity</h2><p className="card-subtitle">{tokenA.symbol} / {tokenB.symbol} {isV3 ? `V3 NFT: #${v3Position?.tokenId ?? "-"}` : <>LP balance: <span className="num">{formatTokenAmountFixed(lpBalance, 18)}</span></>}</p></div></div>
       <div className="pool-card" style={{ boxShadow: "var(--elev-ring)", marginBottom: 16 }}>
         <div className="pair-head">
           <div className="row"><div className="pair-icons"><TokenIcon token={tokenA} /><TokenIcon token={tokenB} /></div><div><h3>{tokenA.symbol} / {tokenB.symbol}</h3><p className="card-subtitle">Selected LP position</p></div></div>
@@ -110,27 +108,39 @@ export function RemoveLiquidityForm({ tokenA, tokenB, percent, onPercent, onBack
       </div>
       <PercentSlider percent={normalizedPercent} setPercent={onPercent} />
       <div className="info-list">
-        <Info label={`You receive ${tokenA.symbol}`} value={formatTokenAmountFixed(position.amountA, tokenA.decimals)} />
-        <Info label={`You receive ${tokenB.symbol}`} value={formatTokenAmountFixed(position.amountB, tokenB.decimals)} />
-        <Info
-          label="Price"
-          value={(
-            <span className="price-info-value">
-              <span>{pair.isLoading ? "Loading..." : price}</span>
-              <button
-                type="button"
-                className="price-toggle-btn"
-                aria-label="Switch price direction"
-                onClick={() => setPriceDirection((current) => current === "base" ? "quote" : "base")}
-              >
-                <ArrowLeftRight size={14} strokeWidth={2.4} />
-              </button>
-            </span>
-          )}
-        />
-        <Info label="Fee tier" value="0.3%" />
+        {isV3 ? (
+          <>
+            <Info label={`You receive ${tokenA.symbol}`} value={v3AmountsLoading ? "Loading..." : formatTokenAmountFixed(v3RemovalAmounts?.amountA ?? 0n, tokenA.decimals)} />
+            <Info label={`You receive ${tokenB.symbol}`} value={v3AmountsLoading ? "Loading..." : formatTokenAmountFixed(v3RemovalAmounts?.amountB ?? 0n, tokenB.decimals)} />
+            <Info label="Liquidity to remove" value={v3PositionQuery.isLoading ? "Loading..." : v3LiquidityAmount.toString()} />
+            <Info label="NFT token ID" value={v3Position?.tokenId.toString() ?? "-"} />
+            <Info label="Fee tier" value={fee ? `${fee / 10_000}%` : "-"} />
+          </>
+        ) : (
+          <>
+            <Info label={`You receive ${tokenA.symbol}`} value={formatTokenAmountFixed(position.amountA, tokenA.decimals)} />
+            <Info label={`You receive ${tokenB.symbol}`} value={formatTokenAmountFixed(position.amountB, tokenB.decimals)} />
+            <Info
+              label="Price"
+              value={(
+                <span className="price-info-value">
+                  <span>{pair.isLoading ? "Loading..." : price}</span>
+                  <button
+                    type="button"
+                    className="price-toggle-btn"
+                    aria-label="Switch price direction"
+                    onClick={() => setPriceDirection((current) => current === "base" ? "quote" : "base")}
+                  >
+                    <ArrowLeftRight size={14} strokeWidth={2.4} />
+                  </button>
+                </span>
+              )}
+            />
+            <Info label="Fee tier" value="0.3%" />
+          </>
+        )}
       </div>
-      <Button variant="primary" className="btn-wide" disabled={!isConnected || !pair.data?.address || lpAmount === 0n} isLoading={approve.isPending || remove.isPending || signPermit.isPending} onClick={submit}>
+      <Button variant="primary" className="btn-wide" disabled={!isConnected || !isCorrectChain || (isV3 ? !v3Position || v3LiquidityAmount === 0n : !pair.data?.address || lpAmount === 0n)} isLoading={approve.isPending || remove.isPending || removeV3.isPending} onClick={submit}>
         {approve.isPending ? "Approving" : cta}
       </Button>
     </Card>

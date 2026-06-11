@@ -33,6 +33,14 @@ export function formatInputPrice(base: Token, quote: Token, baseAmount: string, 
   return formatPoolPrice(base, quote, parsedBase, parsedQuote);
 }
 
+export function invertPriceValue(value: string) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) return "";
+  const inverted = 1 / numericValue;
+  const fractionDigits = inverted >= 1 ? 8 : 12;
+  return trimDecimal(inverted.toFixed(fractionDigits), fractionDigits);
+}
+
 export function calculateLiquidityPosition(pair: PairInfo | undefined, tokenA: Token, tokenB: Token, lpAmount = pair?.lpBalance ?? 0n) {
   const reserves = getPairReserves(pair, tokenA, tokenB);
   const totalSupply = pair?.totalSupply ?? 0n;

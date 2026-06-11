@@ -10,6 +10,7 @@ export function SwapPreview({
   priceImpact,
   minimumReceived,
   slippage,
+  route,
   onTogglePrice
 }: {
   to: Token;
@@ -17,6 +18,7 @@ export function SwapPreview({
   priceImpact: string;
   minimumReceived: bigint;
   slippage: string;
+  route?: string;
   onTogglePrice: () => void;
 }) {
   const amount = minimumReceived ? formatTokenAmountPlain(minimumReceived, to.decimals, 12) : "0";
@@ -34,6 +36,7 @@ export function SwapPreview({
       <Info label="Price Impact" value={priceImpact} />
       <Info label="Minimum Received" value={`${amount} ${to.symbol}`} />
       <Info label="Slippage Tolerance" value={`${slippage}%`} />
+      {route ? <Info label="Route" value={route} /> : null}
     </div>
   );
 }

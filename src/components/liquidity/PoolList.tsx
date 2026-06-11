@@ -5,7 +5,7 @@ import { Button } from "../ui/Button";
 import { PoolCard } from "./PoolCard";
 import type { Address } from "viem";
 
-export function PoolList({ positions, onCreate, onImport, onTrack, onOpen }: { positions: TrackedPoolPosition[]; onCreate: () => void; onImport: () => void; onTrack: (tokenA: Token, tokenB: Token, pairAddress: Address) => void; onOpen: (tokenA: Token, tokenB: Token) => void }) {
+export function PoolList({ positions, onCreate, onImport, onTrack, onOpen }: { positions: TrackedPoolPosition[]; onCreate: () => void; onImport: () => void; onTrack: (tokenA: Token, tokenB: Token, pairAddress: Address) => void; onOpen: (position: TrackedPoolPosition) => void }) {
   return (
     <Card className="pool-shell">
       <div className="card-head">
@@ -20,7 +20,7 @@ export function PoolList({ positions, onCreate, onImport, onTrack, onOpen }: { p
       </div>
       <div className="pool-list">
         {positions.map((position) => (
-          <PoolCard key={`${position.pairAddress}-${position.tokenA.address}-${position.tokenB.address}`} position={position} onTrack={onTrack} onOpen={onOpen} />
+          <PoolCard key={`${position.protocol ?? "V2"}-${position.fee ?? 0}-${position.pairAddress}-${position.tokenA.address}-${position.tokenB.address}`} position={position} onTrack={onTrack} onOpen={onOpen} />
         ))}
       </div>
     </Card>

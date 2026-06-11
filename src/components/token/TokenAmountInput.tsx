@@ -9,6 +9,8 @@ export function TokenAmountInput({
   amount,
   balance,
   readOnly,
+  disabled,
+  tokenLocked,
   onAmountChange,
   onSelect,
   onMax
@@ -18,28 +20,30 @@ export function TokenAmountInput({
   amount: string;
   balance?: bigint;
   readOnly?: boolean;
+  disabled?: boolean;
+  tokenLocked?: boolean;
   onAmountChange: (value: string) => void;
   onSelect: () => void;
   onMax?: () => void;
 }) {
   return (
-    <div className="token-box">
+    <div className={`token-box${disabled ? " is-disabled" : ""}`} aria-disabled={disabled}>
       <div className="token-meta">
         <span>{label}</span>
         <span className="num">
           {balance !== undefined && token ? formatTokenAmount(balance, token.decimals) : "0"}
           {onMax ? (
-            <button className="max-btn" onClick={onMax}>
+            <button type="button" className="max-btn" disabled={disabled} onClick={onMax}>
               Max
             </button>
           ) : null}
         </span>
       </div>
       <div className="token-row">
-        <button className="token-select" onClick={onSelect}>
+        <button type="button" className="token-select" disabled={disabled || tokenLocked} onClick={onSelect}>
           <TokenIcon token={token} muted={!token} />
           <span>{token?.symbol ?? "Select"}</span>
-          <ChevronDown className="h-4 w-4" />
+          {!tokenLocked ? <ChevronDown className="h-4 w-4" /> : null}
         </button>
         <input
           className="amount-input"
@@ -47,6 +51,7 @@ export function TokenAmountInput({
           inputMode="decimal"
           value={amount}
           readOnly={readOnly}
+          disabled={disabled}
           onChange={(event) => onAmountChange(toSafeAmount(event.target.value))}
         />
       </div>

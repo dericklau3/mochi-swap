@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { Address } from "viem";
 import type { Token, TrackedPoolPosition } from "../../types/token";
 import { formatAddress, formatTokenAmountFixed } from "../../lib/format";
@@ -8,6 +8,7 @@ import { isPairTracked } from "../../lib/poolPositions";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { TokenIcon } from "../token/TokenIcon";
+import { TokenSelector } from "../token/TokenSelector";
 import { Info } from "../swap/SwapPreview";
 
 export function ImportPositionModal({
@@ -16,7 +17,9 @@ export function ImportPositionModal({
   defaultB,
   trackedPositions,
   onClose,
-  onImport
+  onImport,
+  onAddCustom,
+  onRemoveCustom
 }: {
   tokens: Token[];
   defaultA: Token;
@@ -24,6 +27,8 @@ export function ImportPositionModal({
   trackedPositions: TrackedPoolPosition[];
   onClose: () => void;
   onImport: (tokenA: Token, tokenB: Token, pairAddress: Address) => void;
+  onAddCustom: (token: Token) => void;
+  onRemoveCustom: (token: Token) => void;
 }) {
   const [tokenA, setTokenA] = useState(defaultA);
   const [tokenB, setTokenB] = useState(defaultB);
@@ -36,7 +41,6 @@ export function ImportPositionModal({
   const pairAddress = canSearch && pair?.address ? formatAddress(pair.address) : "-";
   const hasPosition = Boolean(pair?.address && (pair.lpBalance ?? 0n) > 0n);
   const alreadyImported = isPairTracked(trackedPositions, pair?.address);
-  const visibleTokens = useMemo(() => tokens, [tokens]);
 
   function chooseToken(token: Token) {
     if (picker === "a") setTokenA(token);
@@ -51,19 +55,14 @@ export function ImportPositionModal({
         <ImportTokenBox label="Token A" token={tokenA} onSelect={() => setPicker(picker === "a" ? null : "a")} />
         <ImportTokenBox label="Token B" token={tokenB} onSelect={() => setPicker(picker === "b" ? null : "b")} />
       </div>
-      {picker ? (
-        <div className="inline-token-picker">
-          {visibleTokens.map((token) => (
-            <button key={token.address} className="token-item" onClick={() => chooseToken(token)}>
-              <TokenIcon token={token} />
-              <div>
-                <strong>{token.symbol}</strong>
-              </div>
-              <span className="state-value">{token.decimals} dec</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <TokenSelector
+        open={picker !== null}
+        tokens={tokens}
+        onClose={() => setPicker(null)}
+        onChoose={chooseToken}
+        onAddCustom={onAddCustom}
+        onRemoveCustom={onRemoveCustom}
+      />
       <div className="info-list">
         <Info label="Calculated pair address" value={loading ? "Checking..." : pairAddress} />
         <Info label="Version" value="V2" />

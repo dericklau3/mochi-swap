@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { zeroAddress } from "viem";
 import { CONTRACTS } from "./contracts";
-import { calculateLiquidityPosition, calculateMinimumReceived, calculatePriceImpact, formatInputPrice, formatPoolPrice, formatPoolShare, getPairReserves, quoteAmountByReserves } from "./ammMath";
+import { calculateLiquidityPosition, calculateMinimumReceived, calculatePriceImpact, formatInputPrice, formatPoolPrice, formatPoolShare, getPairReserves, invertPriceValue, quoteAmountByReserves } from "./ammMath";
 import type { PairInfo, Token } from "../types/token";
 
 const bnb: Token = { address: zeroAddress, symbol: "BNB", name: "BNB", decimals: 18, isNative: true };
@@ -34,6 +34,12 @@ describe("AMM math helpers", () => {
   it("formats implied prices from user-entered amounts for new pairs", () => {
     expect(formatInputPrice(bnb, usdt, "0.01", "100000")).toBe("1 BNB = 10000000 USDT");
     expect(formatInputPrice(usdt, bnb, "100000", "0.01")).toBe("1 USDT = 0.0000001 BNB");
+  });
+
+  it("inverts user-entered prices without scientific notation", () => {
+    expect(invertPriceValue("100")).toBe("0.01");
+    expect(invertPriceValue("0.01")).toBe("100");
+    expect(invertPriceValue("")).toBe("");
   });
 
   it("calculates deposited token amounts from LP share and reserves", () => {

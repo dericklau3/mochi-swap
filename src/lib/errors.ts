@@ -7,6 +7,7 @@ export function getReadableError(error: unknown): string {
   }
   if (lower.includes("insufficient funds")) return "Insufficient funds for this transaction.";
   if (lower.includes("insufficient allowance")) return "Insufficient allowance. Please approve first.";
+  if (lower.includes("price slippage check")) return "Deposit amounts do not match the V3 price and range.";
   if (lower.includes("execution reverted") || lower.includes("reverted")) return "Transaction reverted by the contract.";
   if (lower.includes("wrong network") || lower.includes("unsupported chain")) return "Wrong network. Please switch to BSC Testnet.";
   if (lower.includes("invalid token address")) return "Invalid token address.";

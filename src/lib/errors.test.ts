@@ -10,6 +10,10 @@ describe("getReadableError", () => {
     expect(getReadableError("invalid token address")).toBe("Invalid token address.");
   });
 
+  it("explains V3 deposit ratio failures", () => {
+    expect(getReadableError(new Error("execution reverted: Price slippage check"))).toBe("Deposit amounts do not match the V3 price and range.");
+  });
+
   it("uses a safe fallback instead of leaking raw objects", () => {
     expect(getReadableError({ code: 123, data: { nested: true } })).toBe("Something went wrong. Please try again.");
   });

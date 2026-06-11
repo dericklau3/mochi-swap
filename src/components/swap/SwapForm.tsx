@@ -1,7 +1,7 @@
 import { ArrowDownUp, Settings } from "lucide-react";
 import { parseUnits } from "viem";
 import type { Token } from "../../types/token";
-import { routerAddress } from "../../lib/contracts";
+import { routerAddress, v3SwapRouterAddress } from "../../lib/contracts";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useMulticallTokenBalances } from "../../hooks/useMulticallTokenBalances";
 import { useMulticallTokenAllowances } from "../../hooks/useMulticallTokenAllowances";
@@ -19,25 +19,35 @@ import { useAccount } from "wagmi";
 import { getReadableError } from "../../lib/errors";
 import { formatTokenAmountPlain } from "../../lib/format";
 import { isSameRouterToken } from "../../lib/routerTokens";
+import type { BestSwapQuote } from "../../hooks/useSwap";
 
 export function SwapForm({ from, to, amount, slippage, deadline, onAmount, onFrom, onTo, onFlip, onSettings }: { from: Token; to: Token; amount: string; slippage: string; deadline: string; onAmount: (value: string) => void; onFrom: () => void; onTo: () => void; onFlip: () => void; onSettings: () => void }) {
   const { isConnected } = useAccount();
   const debouncedAmount = useDebouncedValue(amount);
   const balances = useMulticallTokenBalances([from, to]);
-  const allowances = useMulticallTokenAllowances([from], routerAddress);
+  const v2Allowances = useMulticallTokenAllowances([from], routerAddress);
+  const v3Allowances = useMulticallTokenAllowances([from], v3SwapRouterAddress);
   const pair = useMulticallPairInfo(from, to);
-  const approve = useApproveToken(from.address, routerAddress);
+  const approveV2 = useApproveToken(from.address, routerAddress);
+  const approveV3 = useApproveToken(from.address, v3SwapRouterAddress);
   const slippageBps = Math.round(Number(slippage) * 100);
   const swap = useSwap(from, to, slippageBps, Number(deadline));
-  const [quote, setQuote] = useState<bigint>();
+  const [quote, setQuote] = useState<BestSwapQuote>();
   const [quoteError, setQuoteError] = useState("");
   const [priceDirection, setPriceDirection] = useState<"from" | "to">("from");
   useTransactionMessage({
-    hash: approve.hash,
-    isSuccess: approve.isSuccess,
-    readableError: approve.readableError,
+    hash: approveV2.hash,
+    isSuccess: approveV2.isSuccess,
+    readableError: approveV2.readableError,
     successTitle: `${from.symbol} approved`,
     failureTitle: `${from.symbol} approval failed`
+  });
+  useTransactionMessage({
+    hash: approveV3.hash,
+    isSuccess: approveV3.isSuccess,
+    readableError: approveV3.readableError,
+    successTitle: `${from.symbol} approved for V3`,
+    failureTitle: `${from.symbol} V3 approval failed`
   });
   useTransactionMessage({
     hash: swap.hash,
@@ -72,7 +82,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, onAmount, onFro
     }
   }, [amount, from.decimals]);
   const balance = balances.data?.[from.address] ?? 0n;
-  const allowance = allowances.data?.[from.address] ?? 0n;
+  const allowance = quote?.protocol === "V3" ? v3Allowances.data?.[from.address] ?? 0n : v2Allowances.data?.[from.address] ?? 0n;
   const insufficientBalance = amountIn > balance;
   const sameRouterToken = isSameRouterToken(from, to);
   const needsApproval = !from.isNative && amountIn > 0n && allowance < amountIn;
@@ -82,8 +92,9 @@ export function SwapForm({ from, to, amount, slippage, deadline, onAmount, onFro
       ? formatPoolPrice(from, to, reserves.reserveA, reserves.reserveB)
       : formatPoolPrice(to, from, reserves.reserveB, reserves.reserveA)
     : `Enter amount for ${from.symbol}/${to.symbol} quote`;
-  const priceImpact = reserves ? calculatePriceImpact(amountIn, quote, reserves.reserveA, reserves.reserveB) : "0.00%";
-  const minimumReceived = calculateMinimumReceived(quote, BigInt(slippageBps));
+  const priceImpact = reserves && quote?.protocol === "V2" ? calculatePriceImpact(amountIn, quote.amountOut, reserves.reserveA, reserves.reserveB) : "0.00%";
+  const minimumReceived = calculateMinimumReceived(quote?.amountOut, BigInt(slippageBps));
+  const routeLabel = quote ? quote.protocol === "V3" ? `V3 ${quote.fee / 10_000}%` : "V2" : undefined;
   const disabled = !isConnected || !amount || insufficientBalance || !quote || Boolean(quoteError) || sameRouterToken;
   const cta = !isConnected ? "Connect Wallet" : sameRouterToken ? "Select different tokens" : !amount ? "Enter Amount" : insufficientBalance ? "Insufficient Balance" : needsApproval ? `Approve ${from.symbol}` : swap.isPending ? "Pending" : "Swap";
 
@@ -97,26 +108,32 @@ export function SwapForm({ from, to, amount, slippage, deadline, onAmount, onFro
       <button className="swap-arrow" onClick={onFlip} aria-label="Switch tokens">
         <ArrowDownUp className="h-5 w-5" />
       </button>
-      <TokenAmountInput label="You receive" token={to} amount={formatTokenAmountPlain(quote, to.decimals, 12)} balance={balances.data?.[to.address] ?? 0n} readOnly onAmountChange={() => undefined} onSelect={onTo} />
+      <TokenAmountInput label="You receive" token={to} amount={formatTokenAmountPlain(quote?.amountOut, to.decimals, 12)} balance={balances.data?.[to.address] ?? 0n} readOnly onAmountChange={() => undefined} onSelect={onTo} />
       <SwapPreview
         to={to}
         price={price}
         priceImpact={priceImpact}
         minimumReceived={minimumReceived}
         slippage={slippage}
+        route={routeLabel}
         onTogglePrice={() => setPriceDirection((current) => current === "from" ? "to" : "from")}
       />
-      {balances.isLoading || allowances.isLoading ? <p className="notice">Loading balances and allowance...</p> : null}
+      {balances.isLoading || v2Allowances.isLoading || v3Allowances.isLoading ? <p className="notice">Loading balances and allowance...</p> : null}
       {quoteError ? <p className="notice danger">{quoteError}</p> : null}
       {sameRouterToken ? <p className="notice warn">BNB and WBNB route to the same wrapped asset. Select a different pair.</p> : null}
       <Button
         variant="primary"
         className="btn-wide"
         disabled={needsApproval ? false : disabled}
-        isLoading={approve.isPending || swap.isPending}
-        onClick={() => needsApproval ? approve.approve(amountIn) : quote ? swap.swap(amount, quote) : undefined}
+        isLoading={approveV2.isPending || approveV3.isPending || swap.isPending}
+        onClick={() => {
+          if (needsApproval) {
+            return quote?.protocol === "V3" ? approveV3.approve(amountIn) : approveV2.approve(amountIn);
+          }
+          return quote ? swap.swap(amount, quote) : undefined;
+        }}
       >
-        {approve.isPending ? "Approving" : cta}
+        {approveV2.isPending || approveV3.isPending ? "Approving" : cta}
       </Button>
     </Card>
   );
