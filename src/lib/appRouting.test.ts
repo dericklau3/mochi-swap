@@ -7,16 +7,17 @@ const tokenB = "0x0000000000000000000000000000000000000002";
 describe("app routing", () => {
   it("restores the page from a hash route", () => {
     expect(getPageFromUrl({ hash: "#/pool", pathname: "/mochi-swap/" })).toBe("pool");
-    expect(getPageFromUrl({ hash: "#/governance", pathname: "/mochi-swap/" })).toBe("governance");
   });
 
-  it("supports direct path routes and defaults unknown routes to swap", () => {
+  it("supports direct path routes and returns not found for unknown routes", () => {
     expect(getPageFromUrl({ hash: "", pathname: "/pool" })).toBe("pool");
-    expect(getPageFromUrl({ hash: "", pathname: "/mochi-swap/unknown" })).toBe("swap");
+    expect(getPageFromUrl({ hash: "#/unknown", pathname: "/mochi-swap/" })).toBe("not-found");
+    expect(getPageFromUrl({ hash: "", pathname: "/mochi-swap/unknown" })).toBe("not-found");
+    expect(getPageFromUrl({ hash: "#/farm", pathname: "/mochi-swap/" })).toBe("not-found");
+    expect(getPageFromUrl({ hash: "#/governance", pathname: "/mochi-swap/" })).toBe("not-found");
   });
 
   it("builds a refresh-safe hash route", () => {
-    expect(getPageHash("farm")).toBe("#/farm");
     expect(getPageHash("add", { mode: "V3", fee: 3000 })).toBe("#/add/v3?fee=3000");
     expect(getPageHash("add", { mode: "V3", fee: 3000, tokenA, tokenB, tokenId: 7n })).toBe(
       `#/add/v3?fee=3000&tokenA=${tokenA}&tokenB=${tokenB}&tokenId=7`
@@ -88,5 +89,23 @@ describe("app routing", () => {
       tokenB,
       protocol: "V2"
     });
+  });
+
+  it("round-trips V4 add, detail, and remove routes", () => {
+    expect(getPageHash("add", { mode: "V4", fee: 3000, tokenA, tokenB, tokenId: 11n })).toBe(
+      `#/add/v4?fee=3000&tokenA=${tokenA}&tokenB=${tokenB}&tokenId=11`
+    );
+    expect(getAddLiquidityRoute({ hash: `#/add/v4?fee=3000&tokenA=${tokenA}&tokenB=${tokenB}&tokenId=11` })).toEqual({
+      mode: "V4",
+      fee: 3000,
+      tokenA,
+      tokenB,
+      tokenId: 11n
+    });
+
+    const detail = getPairDetailHash({ tokenA, tokenB, protocol: "V4", fee: 3000, tokenId: 11n });
+    expect(getPairDetailRoute({ hash: detail })).toEqual({ tokenA, tokenB, protocol: "V4", fee: 3000, tokenId: 11n });
+    const remove = getRemoveLiquidityHash({ tokenA, tokenB, protocol: "V4", fee: 3000, tokenId: 11n });
+    expect(getRemoveLiquidityRoute({ hash: remove })).toEqual({ tokenA, tokenB, protocol: "V4", fee: 3000, tokenId: 11n });
   });
 });

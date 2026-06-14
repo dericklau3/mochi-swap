@@ -26,9 +26,29 @@ export type TrackedPoolPosition = {
   pairAddress: Address;
   tokenA: Token;
   tokenB: Token;
-  protocol?: "V2" | "V3";
+  protocol?: "V2" | "V3" | "V4";
   fee?: number;
   tokenId?: bigint;
+  v4PoolKey?: V4PoolKey;
+  tickLower?: number;
+  tickUpper?: number;
+};
+
+export type V4PoolKey = {
+  currency0: Address;
+  currency1: Address;
+  fee: number;
+  tickSpacing: number;
+  hooks: Address;
+};
+
+export type V4PositionInfo = {
+  tokenId: bigint;
+  poolKey: V4PoolKey;
+  tickLower: number;
+  tickUpper: number;
+  liquidity: bigint;
+  owner?: Address;
 };
 
 export type V3PositionInfo = {

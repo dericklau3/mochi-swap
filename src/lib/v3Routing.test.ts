@@ -2,14 +2,16 @@ import { describe, expect, it } from "vitest";
 import { maxUint160 } from "viem";
 import { calculateV3PositionAmounts, calculateV3RemovalAmounts, chooseBestSwapRoute, formatV3PoolPrice, getSqrtRatioAtTick, getV3DepositAvailability, getV3FeeOption, getV3FullRangeTicks, getV3MintAmountMinimums, getV3PoolPriceValue, getV3PositionRangePrices, getV3PositionRangeStatus, quoteV3DepositAmount, v3FeeOptions } from "./v3Routing";
 import { defaultPoolTokens } from "./tokens";
+import { buildV4PoolKey } from "./v4";
 
 describe("V2/V3 routing helpers", () => {
   it("chooses the route with the highest output amount", () => {
     expect(chooseBestSwapRoute([
       { protocol: "V2", amountOut: 100n },
       { protocol: "V3", fee: 500, amountOut: 98n },
-      { protocol: "V3", fee: 3000, amountOut: 105n }
-    ])).toEqual({ protocol: "V3", fee: 3000, amountOut: 105n });
+      { protocol: "V3", fee: 3000, amountOut: 105n },
+      { protocol: "V4", fee: 3000, poolKey: buildV4PoolKey(defaultPoolTokens[0], defaultPoolTokens[1], 3000), amountOut: 110n }
+    ])).toMatchObject({ protocol: "V4", fee: 3000, amountOut: 110n });
   });
 
   it("ignores failed or empty quotes while choosing the best route", () => {

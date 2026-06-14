@@ -7,7 +7,9 @@ const POOL_POSITIONS_KEY = "mochi-swap:pool-positions";
 export function loadPoolPositions(storage: Pick<Storage, "getItem"> | undefined = typeof window === "undefined" ? undefined : window.localStorage) {
   if (!storage) return [];
   try {
-    const parsed = JSON.parse(storage.getItem(POOL_POSITIONS_KEY) ?? "[]") as TrackedPoolPosition[];
+    const parsed = JSON.parse(storage.getItem(POOL_POSITIONS_KEY) ?? "[]", (_key, value) => (
+      typeof value === "string" && /^\d+n$/.test(value) ? BigInt(value.slice(0, -1)) : value
+    )) as TrackedPoolPosition[];
     return parsed.filter(isStoredPoolPosition).reduce<TrackedPoolPosition[]>((result, position) => upsertPoolPosition(result, position), []);
   } catch {
     return [];
@@ -16,7 +18,10 @@ export function loadPoolPositions(storage: Pick<Storage, "getItem"> | undefined 
 
 export function savePoolPositions(positions: TrackedPoolPosition[], storage: Pick<Storage, "setItem"> | undefined = typeof window === "undefined" ? undefined : window.localStorage) {
   if (!storage) return;
-  storage.setItem(POOL_POSITIONS_KEY, JSON.stringify(positions.filter(isStoredPoolPosition)));
+  storage.setItem(POOL_POSITIONS_KEY, JSON.stringify(
+    positions.filter(isStoredPoolPosition),
+    (_key, value) => typeof value === "bigint" ? `${value}n` : value
+  ));
 }
 
 export function upsertPoolPosition(positions: TrackedPoolPosition[], position: TrackedPoolPosition) {
@@ -55,6 +60,11 @@ function normalizePoolPosition(position: TrackedPoolPosition) {
 
 function isSamePoolPosition(a: TrackedPoolPosition, b: TrackedPoolPosition) {
   if ((a.protocol ?? "V2") !== (b.protocol ?? "V2")) return false;
+  if (a.protocol === "V4" && b.protocol === "V4") {
+    return a.tokenId !== undefined && b.tokenId !== undefined
+      ? a.tokenId === b.tokenId
+      : isSameV4PoolKey(a.v4PoolKey, b.v4PoolKey);
+  }
   if ((a.fee ?? 0) !== (b.fee ?? 0)) return false;
   if (a.pairAddress !== zeroAddress && b.pairAddress !== zeroAddress) {
     return a.pairAddress.toLowerCase() === b.pairAddress.toLowerCase();
@@ -69,7 +79,26 @@ function isSameTokenPair(a0: Token, a1: Token, b0: Token, b1: Token) {
 }
 
 function isStoredPoolPosition(position: TrackedPoolPosition) {
-  return Boolean(position && isAddress(position.pairAddress) && isStoredToken(position.tokenA) && isStoredToken(position.tokenB));
+  if (!position || !isAddress(position.pairAddress) || !isStoredToken(position.tokenA) || !isStoredToken(position.tokenB)) return false;
+  if (position.protocol !== "V4") return true;
+  return Boolean(
+    position.tokenId !== undefined &&
+    position.v4PoolKey &&
+    isAddress(position.v4PoolKey.currency0) &&
+    isAddress(position.v4PoolKey.currency1) &&
+    position.v4PoolKey.hooks.toLowerCase() === zeroAddress &&
+    Number.isInteger(position.v4PoolKey.fee) &&
+    Number.isInteger(position.v4PoolKey.tickSpacing)
+  );
+}
+
+function isSameV4PoolKey(a?: TrackedPoolPosition["v4PoolKey"], b?: TrackedPoolPosition["v4PoolKey"]) {
+  return Boolean(a && b &&
+    a.currency0.toLowerCase() === b.currency0.toLowerCase() &&
+    a.currency1.toLowerCase() === b.currency1.toLowerCase() &&
+    a.fee === b.fee &&
+    a.tickSpacing === b.tickSpacing &&
+    a.hooks.toLowerCase() === b.hooks.toLowerCase());
 }
 
 function isStoredToken(token: Token) {

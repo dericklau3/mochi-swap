@@ -1,6 +1,6 @@
 import type { Address } from "viem";
 import { maxUint160, parseUnits } from "viem";
-import type { Token } from "../types/token";
+import type { Token, V4PoolKey } from "../types/token";
 import { toRouterTokenAddress } from "./routerTokens";
 
 export type V3FeeLabel = "0.05%" | "0.3%" | "1.0%";
@@ -13,7 +13,8 @@ export type V3FeeOption = {
 
 export type SwapRouteQuote =
   | { protocol: "V2"; amountOut?: bigint }
-  | { protocol: "V3"; fee: number; amountOut?: bigint };
+  | { protocol: "V3"; fee: number; amountOut?: bigint }
+  | { protocol: "V4"; fee: number; poolKey: V4PoolKey; amountOut?: bigint };
 
 const minTick = -887272;
 const maxTick = 887272;

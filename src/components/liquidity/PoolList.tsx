@@ -11,7 +11,7 @@ export function PoolList({ positions, onCreate, onImport, onTrack, onOpen }: { p
       <div className="card-head">
         <div>
           <h2 className="card-title">Pool</h2>
-          <p className="card-subtitle">Manage V2 pairs and V3 concentrated liquidity positions.</p>
+          <p className="card-subtitle">Manage V2, V3, and V4 liquidity positions.</p>
         </div>
         <div className="pool-actions">
           <Button variant="primary" onClick={onCreate}>Create position</Button>

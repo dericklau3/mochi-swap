@@ -73,3 +73,40 @@ export const nonfungiblePositionManagerAbi = [
   { type: "function", name: "refundETH", stateMutability: "payable", inputs: [], outputs: [] },
   { type: "function", name: "multicall", stateMutability: "payable", inputs: [{ type: "bytes[]", name: "data" }], outputs: [{ type: "bytes[]", name: "results" }] }
 ] as const;
+
+const v4PoolKeyComponents = [
+  { type: "address", name: "currency0" },
+  { type: "address", name: "currency1" },
+  { type: "uint24", name: "fee" },
+  { type: "int24", name: "tickSpacing" },
+  { type: "address", name: "hooks" }
+] as const;
+
+export const permit2Abi = [
+  { type: "function", name: "allowance", stateMutability: "view", inputs: [{ type: "address", name: "user" }, { type: "address", name: "token" }, { type: "address", name: "spender" }], outputs: [{ type: "uint160", name: "amount" }, { type: "uint48", name: "expiration" }, { type: "uint48", name: "nonce" }] },
+  { type: "function", name: "approve", stateMutability: "nonpayable", inputs: [{ type: "address", name: "token" }, { type: "address", name: "spender" }, { type: "uint160", name: "amount" }, { type: "uint48", name: "expiration" }], outputs: [] }
+] as const;
+
+export const v4PositionManagerAbi = [
+  { type: "function", name: "ownerOf", stateMutability: "view", inputs: [{ type: "uint256", name: "tokenId" }], outputs: [{ type: "address" }] },
+  { type: "function", name: "nextTokenId", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "getPositionLiquidity", stateMutability: "view", inputs: [{ type: "uint256", name: "tokenId" }], outputs: [{ type: "uint128", name: "liquidity" }] },
+  { type: "function", name: "getPoolAndPositionInfo", stateMutability: "view", inputs: [{ type: "uint256", name: "tokenId" }], outputs: [{ type: "tuple", name: "poolKey", components: v4PoolKeyComponents }, { type: "uint256", name: "info" }] },
+  { type: "function", name: "initializePool", stateMutability: "payable", inputs: [{ type: "tuple", name: "key", components: v4PoolKeyComponents }, { type: "uint160", name: "sqrtPriceX96" }], outputs: [{ type: "int24" }] },
+  { type: "function", name: "permitBatch", stateMutability: "payable", inputs: [{ type: "address", name: "owner" }, { type: "tuple", name: "_permitBatch", components: [{ type: "tuple[]", name: "details", components: [{ type: "address", name: "token" }, { type: "uint160", name: "amount" }, { type: "uint48", name: "expiration" }, { type: "uint48", name: "nonce" }] }, { type: "address", name: "spender" }, { type: "uint256", name: "sigDeadline" }] }, { type: "bytes", name: "signature" }], outputs: [{ type: "bytes", name: "err" }] },
+  { type: "function", name: "modifyLiquidities", stateMutability: "payable", inputs: [{ type: "bytes", name: "unlockData" }, { type: "uint256", name: "deadline" }], outputs: [] },
+  { type: "function", name: "multicall", stateMutability: "payable", inputs: [{ type: "bytes[]", name: "data" }], outputs: [{ type: "bytes[]", name: "results" }] }
+] as const;
+
+export const v4StateViewAbi = [
+  { type: "function", name: "getSlot0", stateMutability: "view", inputs: [{ type: "bytes32", name: "poolId" }], outputs: [{ type: "uint160", name: "sqrtPriceX96" }, { type: "int24", name: "tick" }, { type: "uint24", name: "protocolFee" }, { type: "uint24", name: "lpFee" }] },
+  { type: "function", name: "getLiquidity", stateMutability: "view", inputs: [{ type: "bytes32", name: "poolId" }], outputs: [{ type: "uint128", name: "liquidity" }] }
+] as const;
+
+export const v4QuoterAbi = [
+  { type: "function", name: "quoteExactInputSingle", stateMutability: "nonpayable", inputs: [{ type: "tuple", name: "params", components: [{ type: "tuple", name: "poolKey", components: v4PoolKeyComponents }, { type: "bool", name: "zeroForOne" }, { type: "uint128", name: "exactAmount" }, { type: "bytes", name: "hookData" }] }], outputs: [{ type: "uint256", name: "amountOut" }, { type: "uint256", name: "gasEstimate" }] }
+] as const;
+
+export const universalRouterAbi = [
+  { type: "function", name: "execute", stateMutability: "payable", inputs: [{ type: "bytes", name: "commands" }, { type: "bytes[]", name: "inputs" }, { type: "uint256", name: "deadline" }], outputs: [] }
+] as const;

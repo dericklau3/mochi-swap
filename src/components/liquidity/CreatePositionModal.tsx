@@ -1,13 +1,13 @@
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 
-export type LiquidityMode = "V2" | "V3";
+export type LiquidityMode = "V2" | "V3" | "V4";
 
 export function CreatePositionModal({ onClose, onChoose }: { onClose: () => void; onChoose: (mode: LiquidityMode) => void }) {
   const versions = [
     ["V2", "V2 liquidity", "Classic constant product pair with a 0.3% provider fee."],
     ["V3", "V3 concentrated liquidity", "Choose a fee tier and price range before adding liquidity."],
-    ["V4", "V4 hooks", "Coming soon."]
+    ["V4", "V4 concentrated liquidity", "Choose a fee tier and price range before adding liquidity."]
   ] as const;
 
   return (
@@ -17,9 +17,8 @@ export function CreatePositionModal({ onClose, onChoose }: { onClose: () => void
           <Button
             key={version}
             className="version-card"
-            disabled={version === "V4"}
             onClick={() => {
-              if (version !== "V4") onChoose(version);
+              onChoose(version);
             }}
           >
             <div>

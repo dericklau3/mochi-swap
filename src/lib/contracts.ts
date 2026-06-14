@@ -38,6 +38,24 @@ export const CONTRACTS = {
     },
     swapRouter: {
       address: "0x98fA55c53434A96b96aA96f0CF15C759d4FcD901" as Address
+    },
+    permit2: {
+      address: "0x000000000022D473030F116dDEE9F6B43aC78BA3" as Address
+    },
+    v4PoolManager: {
+      address: "0xe60Fc7C84A697270797986e342e2fe2A1A0310cA" as Address
+    },
+    v4PositionManager: {
+      address: "0x38342ef4253091B8C4535eBcE1492077BAA7e023" as Address
+    },
+    v4StateView: {
+      address: "0x25c413Edc80F97dce81479fF4DAC67940095CcB5" as Address
+    },
+    v4Quoter: {
+      address: "0xbE46d4cA46aC3217e5547fB93b9B50Daf92bC213" as Address
+    },
+    universalRouter: {
+      address: "0x5EEA3b6053f56C0f1D48F7215D26c3c0ab6C67b1" as Address
     }
   }
 } as const;
@@ -48,3 +66,9 @@ export const v3FactoryAddress = CONTRACTS.bscTestnet.uniswapV3Factory.address;
 export const v3PositionManagerAddress = CONTRACTS.bscTestnet.nonfungiblePositionManager.address;
 export const v3QuoterAddress = CONTRACTS.bscTestnet.quoterV2.address;
 export const v3SwapRouterAddress = CONTRACTS.bscTestnet.swapRouter.address;
+export const permit2Address = CONTRACTS.bscTestnet.permit2.address;
+export const v4PoolManagerAddress = CONTRACTS.bscTestnet.v4PoolManager.address;
+export const v4PositionManagerAddress = CONTRACTS.bscTestnet.v4PositionManager.address;
+export const v4StateViewAddress = CONTRACTS.bscTestnet.v4StateView.address;
+export const v4QuoterAddress = CONTRACTS.bscTestnet.v4Quoter.address;
+export const universalRouterAddress = CONTRACTS.bscTestnet.universalRouter.address;

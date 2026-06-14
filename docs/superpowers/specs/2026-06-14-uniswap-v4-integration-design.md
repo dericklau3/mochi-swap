@@ -12,7 +12,7 @@ The first release will support:
   V4 positions.
 - Comparing V4 quotes with existing V2 and V3 quotes.
 - Executing only V4 swaps through Universal Router 2.1.1.
-- Custom hook addresses and hook data.
+- Zero-hook V4 pools with empty hook data.
 
 ## Deployment
 
@@ -62,6 +62,10 @@ Native BNB is represented as the zero-address V4 Currency. ERC-20 currencies use
 their contract addresses. Currencies are sorted by their underlying address, so
 native BNB sorts before every ERC-20.
 
+The first release fixes `hooks` to the zero address and fixes every ABI
+`hookData` field to `0x`. These fields remain in official contract structures
+but are not exposed as application inputs.
+
 The initial supported fee choices mirror the current V3 UI:
 
 | UI fee | Fee value | Tick spacing |
@@ -69,16 +73,6 @@ The initial supported fee choices mirror the current V3 UI:
 | 0.05% | 500 | 10 |
 | 0.3% | 3000 | 60 |
 | 1% | 10000 | 200 |
-
-The form exposes:
-
-- Hook address, defaulting to the zero address.
-- Hook data, defaulting to `0x`.
-
-Hook data is retained with the tracked position and reused for position
-operations and swaps involving that tracked PoolKey. The UI validates the hook
-as an EVM address and hook data as hex bytes. The frontend does not attempt to
-validate hook permission bits or hook-specific business rules.
 
 ## Pool And Position UX
 
@@ -90,7 +84,6 @@ the V3 layout and interaction model:
 - Existing or initial pool price.
 - Full or custom price range.
 - Token amounts and balance percentages.
-- Advanced hook address and hook data fields.
 
 The form derives ticks, desired liquidity, maximum token inputs, and slippage
 bounds before encoding PositionManager actions.
@@ -106,9 +99,6 @@ Position detail supports:
 - Collect accrued fees without requiring a liquidity decrease.
 - Display fee tier, range status, token amounts, liquidity, and token ID.
 
-Hook configuration may appear in V4 position details, but it does not appear in
-the Swap route label.
-
 ## Position Discovery And Persistence
 
 Use local tracking rather than historical event scanning.
@@ -121,12 +111,11 @@ token ID, then persist:
 - Complete PoolKey.
 - Token metadata.
 - Tick lower and upper.
-- Hook data.
 
 The existing Import Position flow accepts a V4 token ID. Import reads
 `getPoolAndPositionInfo` and `getPositionLiquidity` from PositionManager and
 constructs the tracked record from chain data. User-supplied pool parameters are
-not trusted.
+not trusted. Positions whose PoolKey contains a non-zero hook are rejected.
 
 Local persistence remains a convenience index. Position ownership and current
 position state are always revalidated on chain before writes.
@@ -170,12 +159,17 @@ For each ERC-20, the UI handles two authorization layers:
 
 Authorization state is scoped to the actual spender:
 
-- V4 liquidity uses PositionManager.
+- V4 liquidity signs an EIP-712 PermitBatch for PositionManager. PositionManager
+  forwards the signature to Permit2 inside the same multicall as the liquidity
+  operation, so this layer does not add a separate transaction.
 - V4 swaps use UniversalRouter.
 - Existing V2 and V3 approvals remain unchanged.
 
 Permit2 expiration and amount are checked before presenting the transaction CTA.
-The UI guides the user through each required authorization transaction in order.
+If the token has not approved Permit2, the UI first requests that ERC-20
+approval transaction. Once token allowance exists, adding V4 liquidity requests
+one wallet signature followed by one PositionManager transaction. An existing
+sufficient Permit2 allowance skips the signature.
 
 ## Swap Routing
 
@@ -198,14 +192,10 @@ The Swap preview route label is:
 - `V3 0.3%`
 - `V4 0.3%`
 
-It does not display the hook address.
-
-Because a token pair and fee can have multiple V4 pools with different hooks,
-V4 quote candidates come from tracked/imported V4 PoolKeys for the selected
-pair. The zero-hook PoolKey for each supported fee may also be probed by default.
-Duplicate PoolKeys are removed before quoting.
-
-Hook data is passed to V4Quoter and UniversalRouter. A failing V4 quote is
+V4 quote candidates come from tracked/imported zero-hook PoolKeys for the
+selected pair. The zero-hook PoolKey for each supported fee is also probed by
+default. Duplicate PoolKeys are removed before quoting. Empty `0x` hook data is
+passed internally to V4Quoter and UniversalRouter. A failing V4 quote is
 discarded without affecting V2 or V3 candidates.
 
 ## Error Handling
@@ -213,8 +203,7 @@ discarded without affecting V2 or V3 candidates.
 Validate before simulation or submission:
 
 - Different input currencies after native currency normalization.
-- Valid hook address.
-- Valid hook data hex.
+- Zero-address PoolKey hook.
 - Supported fee and non-zero tick spacing.
 - Initial price and range.
 - Tick alignment and ordering.
@@ -222,8 +211,7 @@ Validate before simulation or submission:
 - ERC-20 and Permit2 allowances.
 
 Surface decoded contract errors where possible. Otherwise show the existing
-readable transaction error summary. Hook reverts remain transaction failures and
-are not hidden or reinterpreted.
+readable transaction error summary.
 
 Quote errors are isolated per candidate. Transaction errors retain the existing
 message and receipt handling pattern.
@@ -232,9 +220,9 @@ message and receipt handling pattern.
 
 Extend protocol unions from `V2 | V3` to `V2 | V3 | V4`.
 
-V4 tracked positions add a structured PoolKey and hook data. Routes for V4
-position detail, add, and remove operations include token ID; complete PoolKey
-data is resolved from local tracking and confirmed on chain.
+V4 tracked positions add a structured zero-hook PoolKey. Routes for V4 position
+detail, add, and remove operations include token ID; complete PoolKey data is
+resolved from local tracking and confirmed on chain.
 
 Existing stored V2 and V3 positions remain valid without migration. The storage
 reader treats V4-only fields as optional and validates them only when protocol is
@@ -247,7 +235,7 @@ Add unit coverage for:
 - V4 Currency normalization and sorting, including native BNB.
 - PoolKey normalization and pool ID calculation.
 - Fee, tick spacing, full-range, and custom-range calculations.
-- Hook address and hook data validation.
+- Zero-hook PoolKey enforcement and empty hook-data encoding.
 - Mint, increase, decrease, collect, settle, and take action encoding.
 - Universal Router 2.1.1 V4 exact-input calldata.
 - Permit2 allowance and expiration decisions.
@@ -274,7 +262,6 @@ This release does not:
 
 - Discover arbitrary wallet V4 positions by scanning historical logs.
 - Add multi-hop V4 routing.
-- Add user-authored hook-specific parameter schemas.
-- Validate hook bytecode or permission flags.
+- Support non-zero hooks or custom hook data.
 - Route V2 or V3 swaps through UniversalRouter.
 - Add Uniswap SDK dependencies.

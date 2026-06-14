@@ -1,1 +1,1 @@
-export type PageKey = "swap" | "pool" | "pair" | "add" | "remove" | "farm" | "governance";
+export type PageKey = "swap" | "pool" | "pair" | "add" | "remove" | "not-found";

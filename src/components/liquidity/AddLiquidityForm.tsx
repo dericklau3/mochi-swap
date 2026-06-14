@@ -1,13 +1,17 @@
 import { ArrowLeftRight } from "lucide-react";
-import { formatUnits, parseUnits, type Address } from "viem";
-import type { Token } from "../../types/token";
-import { factoryAddress, routerAddress, v3PositionManagerAddress } from "../../lib/contracts";
+import { formatUnits, parseUnits, zeroAddress, type Address } from "viem";
+import type { Token, TrackedPoolPosition, V4PoolKey } from "../../types/token";
+import { factoryAddress, permit2Address, routerAddress, v3PositionManagerAddress, v4PositionManagerAddress } from "../../lib/contracts";
 import { uniswapV2FactoryAbi } from "../../lib/abis";
 import { useMulticallTokenBalances } from "../../hooks/useMulticallTokenBalances";
 import { useMulticallTokenAllowances } from "../../hooks/useMulticallTokenAllowances";
 import { useApproveToken } from "../../hooks/useApproveToken";
 import { useAddLiquidity } from "../../hooks/useAddLiquidity";
 import { useAddV3Liquidity } from "../../hooks/useAddV3Liquidity";
+import { useAddV4Liquidity } from "../../hooks/useAddV4Liquidity";
+import { useV4PoolInfo } from "../../hooks/useV4PoolInfo";
+import { useV4Position } from "../../hooks/useV4Position";
+import { usePermit2Allowance } from "../../hooks/usePermit2Allowance";
 import { useMulticallPairInfo } from "../../hooks/useMulticallPairInfo";
 import { useV3PoolInfo } from "../../hooks/useV3PoolInfo";
 import { useV3Position } from "../../hooks/useV3Position";
@@ -16,12 +20,16 @@ import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { TokenAmountInput } from "../token/TokenAmountInput";
 import { useEffect, useMemo, useState } from "react";
-import { useAccount, useChainId, usePublicClient } from "wagmi";
+import { useAccount, useChainId, usePublicClient, useSignTypedData } from "wagmi";
 import { isSameRouterToken, toRouterTokenAddress } from "../../lib/routerTokens";
 import { formatInputPrice, formatPoolPrice, getPairReserves, invertPriceValue, quoteAmountByReserves } from "../../lib/ammMath";
 import { toSafeAmount } from "../../lib/format";
 import { isTargetChainId } from "../../lib/network";
 import { formatV3PoolPrice, getV3DepositAvailability, getV3FullRangeTicks, getV3PoolPriceValue, getV3PositionRangePrices, quoteV3DepositAmount } from "../../lib/v3Routing";
+import { buildV4PoolKey, formatV4PoolPrice, getV4CustomRangeTicks, getV4FeeOption, getV4FullRangeTicks, getV4PoolPriceValue, toV4Currency } from "../../lib/v4";
+import { buildPermit2Batch, getPermit2AuthorizationStep, getPermit2TypedData } from "../../lib/permit2";
+import { getReadableError } from "../../lib/errors";
+import { getMintedV4TokenId } from "../../lib/v4Receipt";
 import type { LiquidityMode } from "./CreatePositionModal";
 import type { V3PriceDirection, V3RangeMode } from "../../pages/AddLiquidityPage";
 
@@ -35,6 +43,9 @@ export function AddLiquidityForm({
   liquidityMode,
   v3FeeTier,
   positionTokenId,
+  v4PoolKey,
+  v4TickLower,
+  v4TickUpper,
   initialPrice,
   initialPriceDirection,
   rangeMode,
@@ -46,6 +57,7 @@ export function AddLiquidityForm({
   onTokenB,
   onBack,
   onPositionAdded,
+  onV4PositionAdded,
   onV3FeeTier,
   onInitialPrice,
   onInitialPriceDirection,
@@ -62,6 +74,9 @@ export function AddLiquidityForm({
   liquidityMode: LiquidityMode;
   v3FeeTier: string;
   positionTokenId?: bigint;
+  v4PoolKey?: V4PoolKey;
+  v4TickLower?: number;
+  v4TickUpper?: number;
   initialPrice: string;
   initialPriceDirection: V3PriceDirection;
   rangeMode: V3RangeMode;
@@ -72,7 +87,8 @@ export function AddLiquidityForm({
   onTokenA: () => void;
   onTokenB: () => void;
   onBack: () => void;
-  onPositionAdded: (tokenA: Token, tokenB: Token, pairAddress: Address, protocol?: "V2" | "V3", fee?: number) => void;
+  onPositionAdded: (tokenA: Token, tokenB: Token, pairAddress: Address, protocol?: "V2" | "V3" | "V4", fee?: number) => void;
+  onV4PositionAdded: (position: TrackedPoolPosition) => void;
   onV3FeeTier: (value: string) => void;
   onInitialPrice: (value: string) => void;
   onInitialPriceDirection: (value: V3PriceDirection) => void;
@@ -85,15 +101,20 @@ export function AddLiquidityForm({
   const publicClient = usePublicClient();
   const balances = useMulticallTokenBalances([tokenA, tokenB]);
   const isV3 = liquidityMode === "V3";
-  const liquiditySpender = isV3 ? v3PositionManagerAddress : routerAddress;
+  const isV4 = liquidityMode === "V4";
+  const liquiditySpender = isV4 ? permit2Address : isV3 ? v3PositionManagerAddress : routerAddress;
   const allowances = useMulticallTokenAllowances([tokenA, tokenB], liquiditySpender);
   const pair = useMulticallPairInfo(tokenA, tokenB);
   const v3Pool = useV3PoolInfo(tokenA, tokenB, v3FeeTier);
   const v3Position = useV3Position(positionTokenId);
+  const selectedV4PoolKey = v4PoolKey ?? buildV4PoolKey(tokenA, tokenB, getV4FeeOption(v3FeeTier).fee);
+  const v4Pool = useV4PoolInfo(isV4 ? selectedV4PoolKey : undefined);
+  const v4Position = useV4Position(isV4 ? positionTokenId : undefined);
   const [priceDirection, setPriceDirection] = useState<"a" | "b">("a");
   const v3PoolExists = Boolean(v3Pool.data?.address);
   const existingV3Position = v3Position.data;
   const isV3Increase = isV3 && positionTokenId !== undefined;
+  const isV4Increase = isV4 && positionTokenId !== undefined;
   const effectiveV3PriceDirection: V3PriceDirection = v3PoolExists
     ? priceDirection === "b" ? "quote" : "base"
     : initialPriceDirection;
@@ -127,6 +148,9 @@ export function AddLiquidityForm({
   });
   const approveA = useApproveToken(tokenA.address, liquiditySpender);
   const approveB = useApproveToken(tokenB.address, liquiditySpender);
+  const permitA = usePermit2Allowance(!tokenA.isNative && isV4 ? tokenA.address : undefined, v4PositionManagerAddress);
+  const permitB = usePermit2Allowance(!tokenB.isNative && isV4 ? tokenB.address : undefined, v4PositionManagerAddress);
+  const permitSignature = useSignTypedData();
   const add = useAddLiquidity(tokenA, tokenB, Number(slippage) * 100, Number(deadline));
   const addV3 = useAddV3Liquidity({
     tokenA,
@@ -142,6 +166,23 @@ export function AddLiquidityForm({
     slippageBps: Number(slippage) * 100,
     deadlineMinutes: Number(deadline)
   });
+  const v4InitialSqrtPrice = v4Pool.data?.sqrtPriceX96;
+  const addV4 = useAddV4Liquidity({
+    tokenA,
+    tokenB,
+    fee: getV4FeeOption(v3FeeTier).fee,
+    poolKey: selectedV4PoolKey,
+    sqrtPriceX96: v4InitialSqrtPrice,
+    initialPrice,
+    initialPriceDirection,
+    rangeMode,
+    minPrice,
+    maxPrice,
+    positionTokenId,
+    tickLower: v4TickLower ?? v4Position.data?.tickLower,
+    tickUpper: v4TickUpper ?? v4Position.data?.tickUpper,
+    deadlineMinutes: Number(deadline)
+  });
   useTransactionMessage({
     hash: approveA.hash,
     isSuccess: approveA.isSuccess,
@@ -150,11 +191,24 @@ export function AddLiquidityForm({
     failureTitle: `${tokenA.symbol} approval failed`
   });
   useTransactionMessage({
+    hash: addV4.hash,
+    isSuccess: addV4.isSuccess,
+    readableError: addV4.readableError,
+    successTitle: isV4Increase ? "V4 liquidity increased" : "V4 position created",
+    failureTitle: "V4 liquidity transaction failed"
+  });
+  useTransactionMessage({
     hash: approveB.hash,
     isSuccess: approveB.isSuccess,
     readableError: approveB.readableError,
     successTitle: `${tokenB.symbol} approved`,
     failureTitle: `${tokenB.symbol} approval failed`
+  });
+  useTransactionMessage({
+    isSuccess: false,
+    readableError: permitSignature.error ? getReadableError(permitSignature.error) : undefined,
+    successTitle: "Permit2 signed",
+    failureTitle: "Permit2 signature failed"
   });
   useTransactionMessage({
     hash: add.hash,
@@ -190,7 +244,9 @@ export function AddLiquidityForm({
       return { a: 0n, b: 0n };
     }
   }, [amountA, amountB, tokenA.decimals, tokenB.decimals]);
-  const sameRouterToken = isSameRouterToken(tokenA, tokenB);
+  const sameRouterToken = isV4
+    ? toV4Currency(tokenA).toLowerCase() === toV4Currency(tokenB).toLowerCase()
+    : isSameRouterToken(tokenA, tokenB);
   const needA = !tokenA.isNative && parsed.a > 0n && (allowances.data?.[tokenA.address] ?? 0n) < parsed.a;
   const needB = !tokenB.isNative && parsed.b > 0n && (allowances.data?.[tokenB.address] ?? 0n) < parsed.b;
   const insufficient = parsed.a > (balances.data?.[tokenA.address] ?? 0n) || parsed.b > (balances.data?.[tokenB.address] ?? 0n);
@@ -200,6 +256,18 @@ export function AddLiquidityForm({
     tokenA,
     tokenB,
     sqrtPriceX96: v3Pool.data?.sqrtPriceX96,
+    quoteToken: priceDirection
+  });
+  const currentV4Price = formatV4PoolPrice({
+    tokenA,
+    tokenB,
+    sqrtPriceX96: v4Pool.data?.sqrtPriceX96,
+    quoteToken: priceDirection
+  });
+  const currentV4PriceValue = getV4PoolPriceValue({
+    tokenA,
+    tokenB,
+    sqrtPriceX96: v4Pool.data?.sqrtPriceX96,
     quoteToken: priceDirection
   });
   const initialPriceRelation = Number(initialPrice) > 0
@@ -213,9 +281,63 @@ export function AddLiquidityForm({
   const v3HasAmount = amountA !== "" || amountB !== "";
   const v3Cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? "Switch to BSC Testnet" : sameRouterToken ? "Select different tokens" : !positionReady ? "Loading position" : !initialPriceReady ? "Set initial price" : !rangeReady ? "Set valid range" : !v3HasAmount ? "Enter Amounts" : insufficient ? "Insufficient Balance" : needA ? `Approve ${tokenA.symbol}` : needB ? `Approve ${tokenB.symbol}` : addV3.isPending ? "Pending" : isV3Increase ? "Increase V3 Liquidity" : v3PoolExists ? "Add V3 Liquidity" : "Create V3 Pool";
   const v3Disabled = !isConnected || !isCorrectChain || sameRouterToken || insufficient || !positionReady || v3Cta === "Set initial price" || v3Cta === "Set valid range" || v3Cta === "Enter Amounts";
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  const v4StepA = tokenA.isNative ? "READY" : getPermit2AuthorizationStep({
+    amount: parsed.a,
+    tokenAllowance: allowances.data?.[tokenA.address] ?? 0n,
+    permit2Amount: permitA.data?.amount ?? 0n,
+    permit2Expiration: BigInt(permitA.data?.expiration ?? 0),
+    now
+  });
+  const v4StepB = tokenB.isNative ? "READY" : getPermit2AuthorizationStep({
+    amount: parsed.b,
+    tokenAllowance: allowances.data?.[tokenB.address] ?? 0n,
+    permit2Amount: permitB.data?.amount ?? 0n,
+    permit2Expiration: BigInt(permitB.data?.expiration ?? 0),
+    now
+  });
+  const v4PermitLoading = (!tokenA.isNative && permitA.isLoading) || (!tokenB.isNative && permitB.isLoading);
+  const v4NeedsSignature = v4StepA === "PERMIT2_TO_SPENDER" || v4StepB === "PERMIT2_TO_SPENDER";
+  const v4InitialPriceReady = Boolean(isV4Increase || v4Pool.data?.initialized || Number(initialPrice) > 0);
+  const v4RangeReady = isV4Increase || rangeMode === "full" || (Number(minPrice) > 0 && Number(maxPrice) > Number(minPrice));
+  const v4PositionReady = !isV4Increase || Boolean(v4Position.data);
+  const v4HasAmount = parsed.a > 0n || parsed.b > 0n;
+  const v4Cta = !isConnected ? "Connect Wallet"
+    : !isCorrectChain ? "Switch to BSC Testnet"
+      : !v4PositionReady ? "Loading position"
+            : v4PermitLoading ? "Loading allowance"
+            : !v4InitialPriceReady ? "Set initial price"
+              : !v4RangeReady ? "Set valid range"
+                : !v4HasAmount ? "Enter Amounts"
+                  : insufficient ? "Insufficient Balance"
+                    : v4StepA === "TOKEN_TO_PERMIT2" ? `Approve ${tokenA.symbol}`
+                      : v4StepB === "TOKEN_TO_PERMIT2" ? `Approve ${tokenB.symbol}`
+                        : addV4.isPending || permitSignature.isPending ? "Pending"
+                          : isV4Increase ? "Increase V4 Liquidity"
+                            : v4Pool.data?.initialized ? "Add V4 Liquidity" : "Create V4 Pool";
+  const v4Disabled = !isConnected || !isCorrectChain || v4PermitLoading || !v4PositionReady || !v4InitialPriceReady || !v4RangeReady || !v4HasAmount || insufficient;
+
+  async function submitV4Liquidity() {
+    if (v4StepA === "TOKEN_TO_PERMIT2") return approveA.approve();
+    if (v4StepB === "TOKEN_TO_PERMIT2") return approveB.approve();
+    if (!v4NeedsSignature) return addV4.addLiquidity(amountA, amountB);
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const sigDeadline = BigInt(nowSeconds + Number(deadline) * 60);
+    const batch = buildPermit2Batch({
+      permits: [
+        ...(v4StepA === "PERMIT2_TO_SPENDER" ? [{ token: tokenA.address, amount: parsed.a, nonce: permitA.data?.nonce ?? 0 }] : []),
+        ...(v4StepB === "PERMIT2_TO_SPENDER" ? [{ token: tokenB.address, amount: parsed.b, nonce: permitB.data?.nonce ?? 0 }] : [])
+      ],
+      spender: v4PositionManagerAddress,
+      expiration: nowSeconds + 30 * 24 * 60 * 60,
+      sigDeadline
+    });
+    const signature = await permitSignature.signTypedDataAsync(getPermit2TypedData(chainId, batch));
+    addV4.addLiquidity(amountA, amountB, { batch, signature });
+  }
 
   useEffect(() => {
-    if (isV3) return;
+    if (isV3 || isV4) return;
     if (!reserves || !hasPoolLiquidity) return;
     if (!amountA) {
       if (amountB) onAmountB("");
@@ -227,7 +349,7 @@ export function AddLiquidityForm({
     } catch {
       // Invalid transient input is already handled by parsed amount state.
     }
-  }, [amountA, amountB, hasPoolLiquidity, isV3, onAmountB, reserves, tokenA.decimals, tokenB.decimals]);
+  }, [amountA, amountB, hasPoolLiquidity, isV3, isV4, onAmountB, reserves, tokenA.decimals, tokenB.decimals]);
 
   useEffect(() => {
     if (!isV3) return;
@@ -258,6 +380,26 @@ export function AddLiquidityForm({
     onPositionAdded(tokenA, tokenB, v3Pool.data.address, "V3", v3Pool.data.fee);
   }, [addV3.isSuccess, onPositionAdded, tokenA, tokenB, v3Pool.data?.address, v3Pool.data?.fee]);
 
+  useEffect(() => {
+    if (!addV4.isSuccess || !addV4.receipt || !selectedV4PoolKey || isV4Increase) return;
+    const tokenId = getMintedV4TokenId(addV4.receipt.logs, addV4.receipt.from);
+    if (tokenId === undefined) return;
+    const ticks = rangeMode === "full"
+      ? getV4FullRangeTicks(selectedV4PoolKey.fee)
+      : getV4CustomRangeTicks({ tokenA, tokenB, minPrice, maxPrice, direction: initialPriceDirection, fee: selectedV4PoolKey.fee });
+    onV4PositionAdded({
+      pairAddress: zeroAddress,
+      tokenA,
+      tokenB,
+      protocol: "V4",
+      fee: selectedV4PoolKey.fee,
+      tokenId,
+      v4PoolKey: selectedV4PoolKey,
+      tickLower: ticks.tickLower,
+      tickUpper: ticks.tickUpper
+    });
+  }, [addV4.isSuccess, addV4.receipt, initialPriceDirection, isV4Increase, maxPrice, minPrice, onV4PositionAdded, rangeMode, selectedV4PoolKey, tokenA, tokenB]);
+
   function setPercentAmount(target: "a" | "b", value: number) {
     if (isV3 && !v3DepositAvailability[target]) return;
     const token = target === "a" ? tokenA : tokenB;
@@ -271,15 +413,15 @@ export function AddLiquidityForm({
     if (target === "a") onAmountA(value);
     else onAmountB(value);
 
-    if (!isV3) return;
+    if (!isV3 && !isV4) return;
     const quoted = quoteV3DepositAmount({
       amount: value,
       input: target,
-      price: effectiveV3Price,
-      direction: effectiveV3PriceDirection,
-      rangeMode: effectiveRangeMode,
-      minPrice: effectiveMinPrice,
-      maxPrice: effectiveMaxPrice
+      price: isV4 ? v4Pool.data?.initialized ? currentV4PriceValue : initialPrice : effectiveV3Price,
+      direction: isV4 ? v4Pool.data?.initialized ? priceDirection === "b" ? "quote" : "base" : initialPriceDirection : effectiveV3PriceDirection,
+      rangeMode: isV4 ? rangeMode : effectiveRangeMode,
+      minPrice: isV4 ? minPrice : effectiveMinPrice,
+      maxPrice: isV4 ? maxPrice : effectiveMaxPrice
     });
     if (target === "a") onAmountB(quoted);
     else onAmountA(quoted);
@@ -320,12 +462,74 @@ export function AddLiquidityForm({
       </div>
       <div className="card-head">
         <div>
-          <h2 className="card-title">{isV3Increase ? "Increase V3 Liquidity" : isV3 ? "Create V3 Position" : "Add Liquidity"}</h2>
-          <p className="card-subtitle">{isV3Increase ? `Add liquidity to V3 NFT #${positionTokenId}. Position settings are locked.` : isV3 ? "Set fee, pool initialization, and range before entering token amounts." : "V2 pools use the router addLiquidity flow."}</p>
+          <h2 className="card-title">{isV4Increase ? "Increase V4 Liquidity" : isV4 ? "Create V4 Position" : isV3Increase ? "Increase V3 Liquidity" : isV3 ? "Create V3 Position" : "Add Liquidity"}</h2>
+          <p className="card-subtitle">{isV4Increase ? `Add liquidity to V4 NFT #${positionTokenId}. PoolKey and range are locked.` : isV4 ? "Set fee, pool initialization, and range before entering token amounts." : isV3Increase ? `Add liquidity to V3 NFT #${positionTokenId}. Position settings are locked.` : isV3 ? "Set fee, pool initialization, and range before entering token amounts." : "V2 pools use the router addLiquidity flow."}</p>
         </div>
-        <span className="network-pill">{isV3 ? "V3" : "0.3%"}</span>
+        <span className="network-pill">{isV4 ? "V4" : isV3 ? "V3" : "0.3%"}</span>
       </div>
-      {isV3 ? (
+      {isV4 ? (
+        <div className="v3-config">
+          <div className="v3-step">
+            <p className="card-subtitle">Fee tier</p>
+            <div className="percent-grid fee-grid">
+              {["0.05%", "0.3%", "1.0%"].map((tier) => (
+                <button key={tier} type="button" disabled={isV4Increase} className={v3FeeTier === tier ? "is-active" : ""} onClick={() => onV3FeeTier(tier)}>{tier}</button>
+              ))}
+            </div>
+          </div>
+          {!v4Pool.data?.initialized && !isV4Increase ? (
+            <div className="v3-step">
+              <div className="initial-price-heading">
+                <p className="card-subtitle">Initial price</p>
+                {initialPriceRelation ? <strong>{initialPriceRelation}</strong> : null}
+              </div>
+              <div className="pool-check price-card is-new initial-price-card">
+                <p className="initial-price-line">
+                  <input className="initial-price-input" value={initialPrice} onChange={(event) => onInitialPrice(toSafeAmount(event.target.value))} inputMode="decimal" placeholder="0.00" aria-label="Initial price" />
+                </p>
+                <div className="price-direction" aria-label="Initial price direction">
+                  <button type="button" className={initialPriceDirection === "base" ? "is-active" : ""} onClick={() => setV3InitialPriceDirection("base")}>{tokenA.symbol}</button>
+                  <button type="button" className={initialPriceDirection === "quote" ? "is-active" : ""} onClick={() => setV3InitialPriceDirection("quote")}>{tokenB.symbol}</button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="pool-check price-card">
+              <div className="price-card-copy">
+                <strong>Current price</strong>
+                <p>{currentV4Price}</p>
+              </div>
+              <div className="price-direction" aria-label="V4 price display direction">
+                <button type="button" className={priceDirection === "a" ? "is-active" : ""} onClick={() => setV3PoolPriceDirection("a")}>{tokenA.symbol}</button>
+                <button type="button" className={priceDirection === "b" ? "is-active" : ""} onClick={() => setV3PoolPriceDirection("b")}>{tokenB.symbol}</button>
+              </div>
+            </div>
+          )}
+          <div className="v3-step">
+            <p className="card-subtitle">Price range</p>
+            <div className="segmented range-segment">
+              <button type="button" disabled={isV4Increase} className={rangeMode === "full" ? "is-active" : ""} onClick={() => onRangeMode("full")}>Full range</button>
+              <button type="button" disabled={isV4Increase} className={rangeMode === "custom" ? "is-active" : ""} onClick={() => onRangeMode("custom")}>Custom range</button>
+            </div>
+            {rangeMode === "custom" ? (
+              <div className="range-inputs">
+                <label><span>Min price</span><input className="plain-input" value={minPrice} readOnly={isV4Increase} onChange={(event) => onMinPrice(toSafeAmount(event.target.value))} inputMode="decimal" /></label>
+                <label><span>Max price</span><input className="plain-input" value={maxPrice} readOnly={isV4Increase} onChange={(event) => onMaxPrice(toSafeAmount(event.target.value))} inputMode="decimal" /></label>
+              </div>
+            ) : null}
+          </div>
+          <div className="v3-step">
+            <p className="card-subtitle">Deposit amounts</p>
+            <div className="v3-token-stage">
+              <TokenAmountInput label="Token A" token={tokenA} amount={amountA} balance={balances.data?.[tokenA.address] ?? 0n} tokenLocked={isV4Increase} onAmountChange={(value) => setDepositAmount("a", value)} onSelect={onTokenA} />
+              <PercentShortcuts onSelect={(value) => setPercentAmount("a", value)} />
+              <div className="swap-arrow">+</div>
+              <TokenAmountInput label="Token B" token={tokenB} amount={amountB} balance={balances.data?.[tokenB.address] ?? 0n} tokenLocked={isV4Increase} onAmountChange={(value) => setDepositAmount("b", value)} onSelect={onTokenB} />
+              <PercentShortcuts onSelect={(value) => setPercentAmount("b", value)} />
+            </div>
+          </div>
+        </div>
+      ) : isV3 ? (
         <div className="v3-config">
           <div className="v3-step">
             <p className="card-subtitle">Fee tier</p>
@@ -396,7 +600,7 @@ export function AddLiquidityForm({
           <PercentShortcuts onSelect={(value) => setPercentAmount("b", value)} />
         </>
       )}
-      {!isV3 && showPrice ? (
+      {!isV3 && !isV4 && showPrice ? (
         <div className="info-list">
           <div className="info-line">
             <span>Price</span>
@@ -409,20 +613,24 @@ export function AddLiquidityForm({
           </div>
         </div>
       ) : null}
-      {sameRouterToken ? <p className="notice warn">BNB and WBNB use the same wrapped asset. Select a different token pair.</p> : null}
+      {sameRouterToken ? <p className="notice warn">{isV4 ? "Select two different V4 currencies." : "BNB and WBNB use the same wrapped asset. Select a different token pair."}</p> : null}
       <Button
         variant="primary"
         className="btn-wide"
-        disabled={isV3 ? v3Disabled : (!isConnected || !isCorrectChain || !amountA || !amountB || insufficient || sameRouterToken)}
-        isLoading={approveA.isPending || approveB.isPending || (isV3 ? addV3.isPending : add.isPending)}
+        disabled={isV4 ? v4Disabled : isV3 ? v3Disabled : (!isConnected || !isCorrectChain || !amountA || !amountB || insufficient || sameRouterToken)}
+        isLoading={approveA.isPending || approveB.isPending || permitSignature.isPending || (isV4 ? addV4.isPending : isV3 ? addV3.isPending : add.isPending)}
         onClick={() => {
+          if (isV4) {
+            void submitV4Liquidity();
+            return;
+          }
           if (isV3) {
             return needA ? approveA.approve(parsed.a) : needB ? approveB.approve(parsed.b) : addV3.addLiquidity(amountA, amountB);
           }
           return needA ? approveA.approve(parsed.a) : needB ? approveB.approve(parsed.b) : add.addLiquidity(amountA, amountB);
         }}
       >
-        {approveA.isPending || approveB.isPending ? "Approving" : isV3 ? v3Cta : cta}
+        {approveA.isPending || approveB.isPending ? "Approving" : isV4 ? v4Cta : isV3 ? v3Cta : cta}
       </Button>
     </Card>
   );
