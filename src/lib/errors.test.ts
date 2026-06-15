@@ -14,6 +14,10 @@ describe("getReadableError", () => {
     expect(getReadableError(new Error("execution reverted: Price slippage check"))).toBe("Deposit amounts do not match the V3 price and range.");
   });
 
+  it("explains V4 position permission failures", () => {
+    expect(getReadableError(new Error("execution reverted: 0x0ca968d8000000000000000000000000"))).toBe("Connected wallet is not approved to manage this V4 position.");
+  });
+
   it("uses a safe fallback instead of leaking raw objects", () => {
     expect(getReadableError({ code: 123, data: { nested: true } })).toBe("Something went wrong. Please try again.");
   });

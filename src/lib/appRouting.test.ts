@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getAddLiquidityRoute, getPageFromUrl, getPageHash, getPairDetailHash, getPairDetailRoute, getRemoveLiquidityHash, getRemoveLiquidityRoute } from "./appRouting";
+import { getAddLiquidityRoute, getInitialLiquidityRoute, getPageFromUrl, getPageHash, getPairDetailHash, getPairDetailRoute, getRemoveLiquidityHash, getRemoveLiquidityRoute } from "./appRouting";
 
 const tokenA = "0x0000000000000000000000000000000000000001";
 const tokenB = "0x0000000000000000000000000000000000000002";
@@ -107,5 +107,19 @@ describe("app routing", () => {
     expect(getPairDetailRoute({ hash: detail })).toEqual({ tokenA, tokenB, protocol: "V4", fee: 3000, tokenId: 11n });
     const remove = getRemoveLiquidityHash({ tokenA, tokenB, protocol: "V4", fee: 3000, tokenId: 11n });
     expect(getRemoveLiquidityRoute({ hash: remove })).toEqual({ tokenA, tokenB, protocol: "V4", fee: 3000, tokenId: 11n });
+  });
+
+  it("selects only the active liquidity route on initial page load", () => {
+    const pairHash = getPairDetailHash({ tokenA, tokenB, protocol: "V4", fee: 3000, tokenId: 11n });
+    expect(getInitialLiquidityRoute({ hash: pairHash, pathname: "/mochi-swap/" })).toEqual({
+      page: "pair",
+      route: { tokenA, tokenB, protocol: "V4", fee: 3000, tokenId: 11n }
+    });
+
+    const removeHash = getRemoveLiquidityHash({ tokenA, tokenB, protocol: "V3", fee: 500, tokenId: 7n });
+    expect(getInitialLiquidityRoute({ hash: removeHash, pathname: "/mochi-swap/" })).toEqual({
+      page: "remove",
+      route: { tokenA, tokenB, protocol: "V3", fee: 500, tokenId: 7n }
+    });
   });
 });

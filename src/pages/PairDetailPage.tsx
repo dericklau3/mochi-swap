@@ -13,13 +13,16 @@ import { useV3Position } from "../hooks/useV3Position";
 import { useV3Positions } from "../hooks/useV3Positions";
 import { useV4Position } from "../hooks/useV4Position";
 import { useV4PoolInfo } from "../hooks/useV4PoolInfo";
+import { useV3UnclaimedFees } from "../hooks/useV3UnclaimedFees";
+import { useV4UnclaimedFees } from "../hooks/useV4UnclaimedFees";
+import { useRemoveV3Liquidity } from "../hooks/useRemoveV3Liquidity";
 import { useRemoveV4Liquidity } from "../hooks/useRemoveV4Liquidity";
 import { useTransactionMessage } from "../hooks/useTransactionMessage";
 import { calculateLiquidityPosition, formatPoolPrice, formatPoolShare, getPairReserves } from "../lib/ammMath";
-import { formatAddress, formatTokenAmountFixed } from "../lib/format";
+import { formatAddress, formatTokenAmount, formatTokenAmountFixed } from "../lib/format";
 import { isTargetChainId } from "../lib/network";
-import { calculateV3PositionAmounts, getSqrtRatioAtTick, sortV3Tokens } from "../lib/v3Routing";
-import { sortV4Tokens } from "../lib/v4";
+import { calculateV3PositionAmounts, formatV3PoolPrice, getSqrtRatioAtTick, sortV3Tokens } from "../lib/v3Routing";
+import { formatV4PoolPrice, getV4PoolId, sortV4Tokens } from "../lib/v4";
 
 export function PairDetailPage({
   tokenA,
@@ -42,7 +45,7 @@ export function PairDetailPage({
   onAdd: () => void;
   onRemove: () => void;
 }) {
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const [priceDirection, setPriceDirection] = useState<"base" | "quote">("base");
   const pair = useMulticallPairInfo(tokenA, tokenB);
@@ -52,7 +55,15 @@ export function PairDetailPage({
   const v4PositionQuery = useV4Position(protocol === "V4" ? tokenId : undefined);
   const v4Position = v4PositionQuery.data;
   const v4Pool = useV4PoolInfo(protocol === "V4" ? (v4PoolKey ?? v4Position?.poolKey) : undefined);
+  const collectV3Fees = useRemoveV3Liquidity();
   const collectV4Fees = useRemoveV4Liquidity();
+  useTransactionMessage({
+    hash: collectV3Fees.hash,
+    isSuccess: collectV3Fees.isSuccess,
+    readableError: collectV3Fees.readableError,
+    successTitle: "V3 fees collected",
+    failureTitle: "Collect V3 fees failed"
+  });
   useTransactionMessage({
     hash: collectV4Fees.hash,
     isSuccess: collectV4Fees.isSuccess,
@@ -64,6 +75,8 @@ export function PairDetailPage({
   const v3Position = tokenId === undefined
     ? v3Positions.data?.[0]
     : directV3Position.data;
+  const v3Fees = useV3UnclaimedFees(protocol === "V3" ? v3Pool.data?.address : undefined, protocol === "V3" ? v3Position : undefined);
+  const v4Fees = useV4UnclaimedFees(protocol === "V4" ? v4Position : undefined);
   const hasPosition = protocol === "V4" ? Boolean(v4Position) : protocol === "V3" ? Boolean(v3Position) : Boolean(info?.address && (info.lpBalance ?? 0n) > 0n);
   const position = calculateLiquidityPosition(info, tokenA, tokenB);
   const reserves = getPairReserves(info, tokenA, tokenB);
@@ -98,6 +111,34 @@ export function PairDetailPage({
     : undefined;
   const v4AmountA = sortedV4Tokens.aIsCurrency0 ? v4Amounts?.amount0 : v4Amounts?.amount1;
   const v4AmountB = sortedV4Tokens.aIsCurrency0 ? v4Amounts?.amount1 : v4Amounts?.amount0;
+  const v3FeeA = sortedV3Tokens.aIsToken0 ? v3Fees.data?.amount0 : v3Fees.data?.amount1;
+  const v3FeeB = sortedV3Tokens.aIsToken0 ? v3Fees.data?.amount1 : v3Fees.data?.amount0;
+  const v4FeeA = sortedV4Tokens.aIsCurrency0 ? v4Fees.data?.amount0 : v4Fees.data?.amount1;
+  const v4FeeB = sortedV4Tokens.aIsCurrency0 ? v4Fees.data?.amount1 : v4Fees.data?.amount0;
+  const concentratedPrice = protocol === "V4"
+    ? formatV4PoolPrice({
+        tokenA,
+        tokenB,
+        sqrtPriceX96: v4Pool.data?.sqrtPriceX96,
+        quoteToken: priceDirection === "base" ? "b" : "a"
+      })
+    : formatV3PoolPrice({
+        tokenA,
+        tokenB,
+        sqrtPriceX96: v3Pool.data?.sqrtPriceX96,
+        quoteToken: priceDirection === "base" ? "b" : "a"
+      });
+  const poolIdentity = protocol === "V4"
+    ? v4Position ? getV4PoolId(v4Position.poolKey) : undefined
+    : v3Pool.data?.address;
+  const feesLoading = protocol === "V4" ? v4Fees.isLoading : v3Fees.isLoading;
+  const feeA = protocol === "V4" ? v4FeeA : v3FeeA;
+  const feeB = protocol === "V4" ? v4FeeB : v3FeeB;
+  const feePosition = protocol === "V4" ? v4Position : v3Position;
+  const feeCollector = protocol === "V4" ? collectV4Fees : collectV3Fees;
+  const v4OwnerMismatch = protocol === "V4"
+    && Boolean(address && v4Position?.owner)
+    && address?.toLowerCase() !== v4Position?.owner?.toLowerCase();
 
   return (
     <section className="dex-layout pool-layout" data-od-id="pair-detail-page">
@@ -147,13 +188,56 @@ export function PairDetailPage({
               <div className="metric"><span>{tokenB.symbol} deposited</span><strong>{depositedB}</strong></div>
             </div>
           )}
-          <div className="info-list">
-            <Info label={protocol !== "V2" ? "Position manager" : "Pair address"} value={protocol === "V4" ? `NFT #${v4Position?.tokenId ?? "-"}` : protocol === "V3" ? `NFT #${v3Position?.tokenId ?? "-"}` : info?.address ? formatAddress(info.address) : "Pair not found"} />
-            <Info label="Fee tier" value={protocol !== "V2" && fee ? `${fee / 10_000}%` : "0.3%"} />
-            <Info label="Range" value={protocol !== "V2" ? "Concentrated" : "Full range"} />
-            {protocol === "V3" ? <Info label="Ticks" value={v3Position ? `${v3Position.tickLower} to ${v3Position.tickUpper}` : "-"} /> : null}
-            {protocol === "V4" ? <Info label="Ticks" value={v4Position ? `${v4Position.tickLower} to ${v4Position.tickUpper}` : "-"} /> : null}
-            {protocol === "V2" ? (
+          <div className="info-list pool-detail-info">
+            {protocol !== "V2" ? (
+              <>
+                <Info label={protocol === "V4" ? "Pool ID" : "Pool address"} value={poolIdentity ? formatAddress(poolIdentity) : "-"} />
+                <Info label="Fee tier" value={fee ? `${fee / 10_000}%` : "-"} />
+                <Info
+                  label="Unclaimed fees"
+                  value={(
+                    <span className="fee-info-value">
+                      <span>
+                        {feesLoading
+                          ? "Loading..."
+                          : `${formatTokenAmount(feeA, tokenA.decimals)} ${tokenA.symbol} + ${formatTokenAmount(feeB, tokenB.decimals)} ${tokenB.symbol}`}
+                      </span>
+                      <Button
+                        className="mini-btn fee-collect-btn"
+                        aria-label="Collect fees"
+                        disabled={!isConnected || !isTargetChainId(chainId) || !feePosition || v4OwnerMismatch}
+                        isLoading={feeCollector.isPending}
+                        onClick={() => {
+                          if (protocol === "V4" && v4Position && !v4OwnerMismatch) collectV4Fees.collectFees(v4Position);
+                          if (protocol === "V3" && v3Position) collectV3Fees.collectFees(v3Position);
+                        }}
+                      >
+                        Collect fees
+                      </Button>
+                    </span>
+                  )}
+                />
+                <Info
+                  label="Price"
+                  value={(
+                    <span className="price-info-value">
+                      <span>{concentratedPrice}</span>
+                      <button
+                        type="button"
+                        className="price-toggle-btn"
+                        aria-label="Switch price direction"
+                        onClick={() => setPriceDirection((current) => current === "base" ? "quote" : "base")}
+                      >
+                        <ArrowLeftRight size={14} strokeWidth={2.4} />
+                      </button>
+                    </span>
+                  )}
+                />
+              </>
+            ) : (
+              <>
+                <Info label="Pair address" value={info?.address ? formatAddress(info.address) : "Pair not found"} />
+                <Info label="Fee tier" value="0.3%" />
               <Info
                 label="Price"
                 value={(
@@ -170,17 +254,11 @@ export function PairDetailPage({
                   </span>
                 )}
               />
-            ) : null}
+              </>
+            )}
           </div>
-          {protocol === "V4" ? (
-            <Button
-              className="btn-wide"
-              disabled={!isConnected || !isTargetChainId(chainId) || !v4Position}
-              isLoading={collectV4Fees.isPending}
-              onClick={() => v4Position ? collectV4Fees.collectFees(v4Position) : undefined}
-            >
-              Collect fees
-            </Button>
+          {v4OwnerMismatch && v4Position?.owner ? (
+            <p className="notice warn">Only NFT owner {formatAddress(v4Position.owner)} can collect these fees.</p>
           ) : null}
           {!hasPosition ? <p className="notice warn">No wallet {protocol === "V4" ? "V4 NFT" : protocol === "V3" ? "V3 NFT" : "LP"} balance was found for this pair. Add liquidity before removing.</p> : null}
         </Card>

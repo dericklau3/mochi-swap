@@ -22,6 +22,11 @@ export type PairDetailRoute = {
 
 export type RemoveLiquidityRoute = PairDetailRoute;
 
+export type InitialLiquidityRoute =
+  | { page: "add"; route: AddLiquidityRoute }
+  | { page: "pair"; route: PairDetailRoute }
+  | { page: "remove"; route: RemoveLiquidityRoute };
+
 function isPageKey(value: string): value is PageKey {
   return pageKeys.includes(value as PageKey);
 }
@@ -63,6 +68,20 @@ export function getPairDetailRoute(url: Pick<Location, "hash">): PairDetailRoute
 
 export function getRemoveLiquidityRoute(url: Pick<Location, "hash">): RemoveLiquidityRoute | undefined {
   return getPositionRoute(url, "remove");
+}
+
+export function getInitialLiquidityRoute(url: Pick<Location, "hash" | "pathname">): InitialLiquidityRoute | undefined {
+  const page = getPageFromUrl(url);
+  if (page === "add") return { page, route: getAddLiquidityRoute(url) };
+  if (page === "pair") {
+    const route = getPairDetailRoute(url);
+    return route ? { page, route } : undefined;
+  }
+  if (page === "remove") {
+    const route = getRemoveLiquidityRoute(url);
+    return route ? { page, route } : undefined;
+  }
+  return undefined;
 }
 
 function getPositionRoute(url: Pick<Location, "hash">, expectedPath: "pair" | "remove"): PairDetailRoute | undefined {

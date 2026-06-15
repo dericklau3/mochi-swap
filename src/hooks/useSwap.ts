@@ -1,4 +1,4 @@
-import { encodeFunctionData, parseUnits } from "viem";
+import { encodeFunctionData, parseUnits, type Hex } from "viem";
 import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { quoterV2Abi, swapRouterV3Abi, universalRouterAbi, uniswapV2RouterAbi, v4QuoterAbi } from "../lib/abis";
 import { routerAddress, universalRouterAddress, v3QuoterAddress, v3SwapRouterAddress, v4QuoterAddress } from "../lib/contracts";
@@ -6,10 +6,12 @@ import { getReadableError } from "../lib/errors";
 import { isSameRouterToken, toRouterPath } from "../lib/routerTokens";
 import { applySlippage, chooseBestSwapRoute, v3FeeOptions, type SwapRouteQuote } from "../lib/v3Routing";
 import type { Token, V4PoolKey } from "../types/token";
-import { encodeV4SwapInput, toV4Currency, V4_ROUTER_COMMAND } from "../lib/v4";
+import type { Permit2PermitSingle } from "../lib/permit2";
+import { encodeV4SwapInput, encodeV4UniversalRouterPlan, toV4Currency } from "../lib/v4";
 import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export type BestSwapQuote = SwapRouteQuote & { amountOut: bigint };
+export type V4SwapPermit = { permit: Permit2PermitSingle; signature: Hex };
 
 export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinutes = 20, v4Candidates: V4PoolKey[] = []) {
   const { address } = useAccount();
@@ -67,7 +69,7 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
     return chooseBestSwapRoute(quotes) as BestSwapQuote | undefined;
   }
 
-  function swap(amount: string, quote: BestSwapQuote) {
+  function swap(amount: string, quote: BestSwapQuote, v4Permit?: V4SwapPermit) {
     if (!address || !from || !to) return;
     if (quote.protocol !== "V4" && isSameRouterToken(from, to)) return;
     const amountIn = parseUnits(amount || "0", from.decimals);
@@ -83,11 +85,16 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
         amountIn,
         amountOutMinimum: minOut
       });
+      const plan = encodeV4UniversalRouterPlan({
+        swapInput: input,
+        permit: v4Permit?.permit,
+        signature: v4Permit?.signature
+      });
       write.writeContract({
         address: universalRouterAddress,
         abi: universalRouterAbi,
         functionName: "execute",
-        args: [`0x${V4_ROUTER_COMMAND.toString(16).padStart(2, "0")}`, [input], deadline],
+        args: [plan.commands, plan.inputs, deadline],
         value: from.isNative ? amountIn : undefined
       });
       return;

@@ -5,8 +5,12 @@ const DEX_MUTATION_QUERY_KEYS = new Set([
   "token-allowances",
   "permit2-allowance",
   "pair-info",
+  "v3-pool-info",
+  "v3-position",
+  "v3-unclaimed-fees",
   "v4-pool-info",
-  "v4-position"
+  "v4-position",
+  "v4-unclaimed-fees"
 ]);
 
 export function shouldInvalidateAfterDexMutation(queryKey: QueryKey) {

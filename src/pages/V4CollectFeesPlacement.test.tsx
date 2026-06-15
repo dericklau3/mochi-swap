@@ -1,13 +1,19 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Token, V4PositionInfo } from "../types/token";
+import type { Token, V3PositionInfo, V4PositionInfo } from "../types/token";
 import { PairDetailPage } from "./PairDetailPage";
 import { RemoveLiquidityPage } from "./RemoveLiquidityPage";
 
 const collectFees = vi.fn();
+const collectV3Fees = vi.fn();
+const { walletState } = vi.hoisted(() => ({
+  walletState: {
+    address: "0x00000000000000000000000000000000000000aa"
+  }
+}));
 
 vi.mock("wagmi", () => ({
-  useAccount: () => ({ isConnected: true }),
+  useAccount: () => ({ isConnected: true, address: walletState.address }),
   useChainId: () => 97
 }));
 
@@ -31,11 +37,17 @@ vi.mock("../hooks/useV3Positions", () => ({
 }));
 
 vi.mock("../hooks/useV3Position", () => ({
-  useV3Position: () => ({ data: undefined, isLoading: false })
+  useV3Position: (tokenId?: bigint) => ({ data: tokenId ? v3Position : undefined, isLoading: false })
 }));
 
 vi.mock("../hooks/useV3PoolInfo", () => ({
-  useV3PoolInfo: () => ({ data: undefined, isLoading: false })
+  useV3PoolInfo: () => ({
+    data: {
+      address: "0x0000000000000000000000000000000000000033",
+      sqrtPriceX96: 79228162514264337593543950336n
+    },
+    isLoading: false
+  })
 }));
 
 vi.mock("../hooks/useV4Position", () => ({
@@ -68,6 +80,7 @@ vi.mock("../hooks/useRemoveLiquidity", () => ({
 vi.mock("../hooks/useRemoveV3Liquidity", () => ({
   useRemoveV3Liquidity: () => ({
     removeLiquidity: vi.fn(),
+    collectFees: collectV3Fees,
     isPending: false,
     isSuccess: false
   })
@@ -79,6 +92,20 @@ vi.mock("../hooks/useRemoveV4Liquidity", () => ({
     collectFees,
     isPending: false,
     isSuccess: false
+  })
+}));
+
+vi.mock("../hooks/useV3UnclaimedFees", () => ({
+  useV3UnclaimedFees: () => ({
+    data: { amount0: 12n * 10n ** 18n, amount1: 8n * 10n ** 18n },
+    isLoading: false
+  })
+}));
+
+vi.mock("../hooks/useV4UnclaimedFees", () => ({
+  useV4UnclaimedFees: () => ({
+    data: { amount0: 5n * 10n ** 18n, amount1: 3n * 10n ** 18n },
+    isLoading: false
   })
 }));
 
@@ -107,12 +134,29 @@ const v4Position: V4PositionInfo = {
   },
   tickLower: -120,
   tickUpper: 120,
-  liquidity: 1000n
+  liquidity: 1000n,
+  owner: "0x00000000000000000000000000000000000000aa"
+};
+
+const v3Position: V3PositionInfo = {
+  tokenId: 7n,
+  token0: tokenA.address,
+  token1: tokenB.address,
+  fee: 3000,
+  tickLower: -120,
+  tickUpper: 120,
+  liquidity: 1000n,
+  feeGrowthInside0LastX128: 0n,
+  feeGrowthInside1LastX128: 0n,
+  tokensOwed0: 0n,
+  tokensOwed1: 0n
 };
 
 afterEach(() => {
   cleanup();
   collectFees.mockClear();
+  collectV3Fees.mockClear();
+  walletState.address = "0x00000000000000000000000000000000000000aa";
 });
 
 describe("V4 collect fees placement", () => {
@@ -134,6 +178,31 @@ describe("V4 collect fees placement", () => {
     fireEvent.click(screen.getByRole("button", { name: "Collect fees" }));
 
     expect(collectFees).toHaveBeenCalledWith(v4Position);
+    expect(screen.getByText("Pool ID")).toBeInTheDocument();
+    expect(screen.getByText("Unclaimed fees")).toBeInTheDocument();
+    expect(screen.getByText("5 AAA + 3 BBB")).toBeInTheDocument();
+    expect(screen.getByText("1 AAA = 1 BBB")).toBeInTheDocument();
+  });
+
+  it("prevents a non-owner wallet from collecting V4 fees", () => {
+    walletState.address = "0x00000000000000000000000000000000000000bb";
+    render(
+      <PairDetailPage
+        tokenA={tokenA}
+        tokenB={tokenB}
+        protocol="V4"
+        fee={3000}
+        tokenId={v4Position.tokenId}
+        v4PoolKey={v4Position.poolKey}
+        onBack={vi.fn()}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Collect fees" })).toBeDisabled();
+    expect(screen.getByText("Only NFT owner 0x0000...00aa can collect these fees.")).toBeInTheDocument();
+    expect(collectFees).not.toHaveBeenCalled();
   });
 
   it("does not show collect fees on the remove liquidity page", () => {
@@ -152,5 +221,29 @@ describe("V4 collect fees placement", () => {
     );
 
     expect(screen.queryByRole("button", { name: "Collect fees" })).not.toBeInTheDocument();
+  });
+
+  it("shows V3 pool details and collects V3 fees", () => {
+    render(
+      <PairDetailPage
+        tokenA={tokenA}
+        tokenB={tokenB}
+        protocol="V3"
+        fee={3000}
+        tokenId={v3Position.tokenId}
+        onBack={vi.fn()}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Collect fees" }));
+
+    expect(collectV3Fees).toHaveBeenCalledWith(v3Position);
+    expect(screen.getByText("Pool address")).toBeInTheDocument();
+    expect(screen.getByText("0x0000...0033")).toBeInTheDocument();
+    expect(screen.getByText("Unclaimed fees")).toBeInTheDocument();
+    expect(screen.getByText("12 AAA + 8 BBB")).toBeInTheDocument();
+    expect(screen.getByText("1 AAA = 1 BBB")).toBeInTheDocument();
   });
 });

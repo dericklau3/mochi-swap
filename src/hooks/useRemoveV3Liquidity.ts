@@ -12,6 +12,20 @@ export function useRemoveV3Liquidity(deadlineMinutes = 20) {
   const receipt = useWaitForTransactionReceipt({ hash: write.data });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
+  function getCollectCall(position: V3PositionInfo) {
+    if (!address) return;
+    return encodeFunctionData({
+      abi: nonfungiblePositionManagerAbi,
+      functionName: "collect",
+      args: [{
+        tokenId: position.tokenId,
+        recipient: address,
+        amount0Max: maxUint128,
+        amount1Max: maxUint128
+      }]
+    });
+  }
+
   function removeLiquidity(position: V3PositionInfo, percent: number) {
     if (!address || position.liquidity <= 0n) return;
     const normalizedPercent = Math.min(100, Math.max(0, Math.round(percent)));
@@ -29,16 +43,8 @@ export function useRemoveV3Liquidity(deadlineMinutes = 20) {
         deadline
       }]
     });
-    const collectCall = encodeFunctionData({
-      abi: nonfungiblePositionManagerAbi,
-      functionName: "collect",
-      args: [{
-        tokenId: position.tokenId,
-        recipient: address,
-        amount0Max: maxUint128,
-        amount1Max: maxUint128
-      }]
-    });
+    const collectCall = getCollectCall(position);
+    if (!collectCall) return;
     write.writeContract({
       address: v3PositionManagerAddress,
       abi: nonfungiblePositionManagerAbi,
@@ -47,8 +53,20 @@ export function useRemoveV3Liquidity(deadlineMinutes = 20) {
     });
   }
 
+  function collectFees(position: V3PositionInfo) {
+    const collectCall = getCollectCall(position);
+    if (!collectCall) return;
+    write.writeContract({
+      address: v3PositionManagerAddress,
+      abi: nonfungiblePositionManagerAbi,
+      functionName: "multicall",
+      args: [[collectCall]]
+    });
+  }
+
   return {
     removeLiquidity,
+    collectFees,
     hash: write.data,
     isPending: write.isPending || receipt.isLoading,
     isSuccess: receipt.isSuccess,

@@ -48,7 +48,10 @@ export const uniswapV3FactoryAbi = [
 
 export const uniswapV3PoolAbi = [
   { type: "function", name: "slot0", stateMutability: "view", inputs: [], outputs: [{ type: "uint160", name: "sqrtPriceX96" }, { type: "int24", name: "tick" }, { type: "uint16", name: "observationIndex" }, { type: "uint16", name: "observationCardinality" }, { type: "uint16", name: "observationCardinalityNext" }, { type: "uint8", name: "feeProtocol" }, { type: "bool", name: "unlocked" }] },
-  { type: "function", name: "liquidity", stateMutability: "view", inputs: [], outputs: [{ type: "uint128" }] }
+  { type: "function", name: "liquidity", stateMutability: "view", inputs: [], outputs: [{ type: "uint128" }] },
+  { type: "function", name: "feeGrowthGlobal0X128", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "feeGrowthGlobal1X128", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "ticks", stateMutability: "view", inputs: [{ type: "int24", name: "tick" }], outputs: [{ type: "uint128", name: "liquidityGross" }, { type: "int128", name: "liquidityNet" }, { type: "uint256", name: "feeGrowthOutside0X128" }, { type: "uint256", name: "feeGrowthOutside1X128" }, { type: "int56", name: "tickCumulativeOutside" }, { type: "uint160", name: "secondsPerLiquidityOutsideX128" }, { type: "uint32", name: "secondsOutside" }, { type: "bool", name: "initialized" }] }
 ] as const;
 
 export const quoterV2Abi = [
@@ -100,7 +103,9 @@ export const v4PositionManagerAbi = [
 
 export const v4StateViewAbi = [
   { type: "function", name: "getSlot0", stateMutability: "view", inputs: [{ type: "bytes32", name: "poolId" }], outputs: [{ type: "uint160", name: "sqrtPriceX96" }, { type: "int24", name: "tick" }, { type: "uint24", name: "protocolFee" }, { type: "uint24", name: "lpFee" }] },
-  { type: "function", name: "getLiquidity", stateMutability: "view", inputs: [{ type: "bytes32", name: "poolId" }], outputs: [{ type: "uint128", name: "liquidity" }] }
+  { type: "function", name: "getLiquidity", stateMutability: "view", inputs: [{ type: "bytes32", name: "poolId" }], outputs: [{ type: "uint128", name: "liquidity" }] },
+  { type: "function", name: "getFeeGrowthInside", stateMutability: "view", inputs: [{ type: "bytes32", name: "poolId" }, { type: "int24", name: "tickLower" }, { type: "int24", name: "tickUpper" }], outputs: [{ type: "uint256", name: "feeGrowthInside0X128" }, { type: "uint256", name: "feeGrowthInside1X128" }] },
+  { type: "function", name: "getPositionInfo", stateMutability: "view", inputs: [{ type: "bytes32", name: "poolId" }, { type: "address", name: "owner" }, { type: "int24", name: "tickLower" }, { type: "int24", name: "tickUpper" }, { type: "bytes32", name: "salt" }], outputs: [{ type: "uint128", name: "liquidity" }, { type: "uint256", name: "feeGrowthInside0LastX128" }, { type: "uint256", name: "feeGrowthInside1LastX128" }] }
 ] as const;
 
 export const v4QuoterAbi = [

@@ -15,18 +15,18 @@ import { Button } from "../ui/Button";
 import { TokenAmountInput } from "../token/TokenAmountInput";
 import { SwapPreview } from "./SwapPreview";
 import { useEffect, useMemo, useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId, useSignTypedData } from "wagmi";
 import { getReadableError } from "../../lib/errors";
 import { formatTokenAmountPlain } from "../../lib/format";
 import { isSameRouterToken } from "../../lib/routerTokens";
 import type { BestSwapQuote } from "../../hooks/useSwap";
 import { usePermit2Allowance } from "../../hooks/usePermit2Allowance";
-import { useApprovePermit2 } from "../../hooks/useApprovePermit2";
-import { getPermit2AuthorizationStep } from "../../lib/permit2";
+import { buildPermit2Single, getPermit2AuthorizationStep, getPermit2SingleTypedData } from "../../lib/permit2";
 import { formatV4RouteLabel } from "../../lib/v4";
 
 export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, onAmount, onFrom, onTo, onFlip, onSettings }: { from: Token; to: Token; amount: string; slippage: string; deadline: string; v4Candidates: V4PoolKey[]; onAmount: (value: string) => void; onFrom: () => void; onTo: () => void; onFlip: () => void; onSettings: () => void }) {
   const { isConnected } = useAccount();
+  const chainId = useChainId();
   const debouncedAmount = useDebouncedValue(amount);
   const balances = useMulticallTokenBalances([from, to]);
   const v2Allowances = useMulticallTokenAllowances([from], routerAddress);
@@ -37,7 +37,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
   const approveV2 = useApproveToken(from.address, routerAddress);
   const approveV3 = useApproveToken(from.address, v3SwapRouterAddress);
   const approvePermit2Token = useApproveToken(from.address, permit2Address);
-  const approveUniversalRouter = useApprovePermit2(!from.isNative ? from.address : undefined, universalRouterAddress);
+  const permitSignature = useSignTypedData();
   const slippageBps = Math.round(Number(slippage) * 100);
   const swap = useSwap(from, to, slippageBps, Number(deadline), v4Candidates);
   const [quote, setQuote] = useState<BestSwapQuote>();
@@ -58,11 +58,10 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
     failureTitle: `${from.symbol} Permit2 token approval failed`
   });
   useTransactionMessage({
-    hash: approveUniversalRouter.hash,
-    isSuccess: approveUniversalRouter.isSuccess,
-    readableError: approveUniversalRouter.readableError,
-    successTitle: `${from.symbol} permitted for V4`,
-    failureTitle: `${from.symbol} V4 permit failed`
+    isSuccess: false,
+    readableError: permitSignature.error ? getReadableError(permitSignature.error) : undefined,
+    successTitle: "Permit2 signed",
+    failureTitle: "Permit2 signature failed"
   });
   useTransactionMessage({
     hash: approveV3.hash,
@@ -114,7 +113,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
     permit2Expiration: BigInt(permit2Allowance.data?.expiration ?? 0),
     now: BigInt(Math.floor(Date.now() / 1000))
   });
-  const needsApproval = !from.isNative && amountIn > 0n && (quote?.protocol === "V4" ? v4Authorization !== "READY" : allowance < amountIn);
+  const needsApproval = !from.isNative && amountIn > 0n && (quote?.protocol === "V4" ? v4Authorization === "TOKEN_TO_PERMIT2" : allowance < amountIn);
   const reserves = getPairReserves(pair.data, from, to);
   const price = reserves
     ? priceDirection === "from"
@@ -124,8 +123,29 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
   const priceImpact = reserves && quote?.protocol === "V2" ? calculatePriceImpact(amountIn, quote.amountOut, reserves.reserveA, reserves.reserveB) : "0.00%";
   const minimumReceived = calculateMinimumReceived(quote?.amountOut, BigInt(slippageBps));
   const routeLabel = quote ? quote.protocol === "V4" ? formatV4RouteLabel(quote.fee) : quote.protocol === "V3" ? `V3 ${quote.fee / 10_000}%` : "V2" : undefined;
-  const disabled = !isConnected || !amount || insufficientBalance || !quote || Boolean(quoteError) || sameRouterToken;
-  const cta = !isConnected ? "Connect Wallet" : sameRouterToken ? "Select different tokens" : !amount ? "Enter Amount" : insufficientBalance ? "Insufficient Balance" : v4Authorization === "TOKEN_TO_PERMIT2" ? `Approve ${from.symbol}` : v4Authorization === "PERMIT2_TO_SPENDER" ? `Permit ${from.symbol}` : needsApproval ? `Approve ${from.symbol}` : swap.isPending ? "Pending" : "Swap";
+  const disabled = !isConnected || !amount || insufficientBalance || !quote || Boolean(quoteError) || sameRouterToken || permitSignature.isPending;
+  const cta = !isConnected ? "Connect Wallet" : sameRouterToken ? "Select different tokens" : !amount ? "Enter Amount" : insufficientBalance ? "Insufficient Balance" : needsApproval ? `Approve ${from.symbol}` : permitSignature.isPending ? "Signing" : swap.isPending ? "Pending" : "Swap";
+
+  async function submitSwap() {
+    if (!quote) return;
+    if (needsApproval) {
+      if (quote.protocol === "V4") return approvePermit2Token.approve();
+      return quote.protocol === "V3" ? approveV3.approve(amountIn) : approveV2.approve(amountIn);
+    }
+    if (quote.protocol !== "V4" || from.isNative || v4Authorization === "READY") {
+      return swap.swap(amount, quote);
+    }
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const permit = buildPermit2Single({
+      token: from.address,
+      spender: universalRouterAddress,
+      expiration: nowSeconds + 30 * 24 * 60 * 60,
+      nonce: permit2Allowance.data?.nonce ?? 0,
+      sigDeadline: BigInt(nowSeconds + Number(deadline) * 60)
+    });
+    const signature = await permitSignature.signTypedDataAsync(getPermit2SingleTypedData(chainId, permit));
+    swap.swap(amount, quote, { permit, signature });
+  }
 
   return (
     <Card>
@@ -154,18 +174,10 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
         variant="primary"
         className="btn-wide"
         disabled={needsApproval ? false : disabled}
-        isLoading={approveV2.isPending || approveV3.isPending || approvePermit2Token.isPending || approveUniversalRouter.isPending || swap.isPending}
-        onClick={() => {
-          if (needsApproval) {
-            if (quote?.protocol === "V4") {
-              return v4Authorization === "TOKEN_TO_PERMIT2" ? approvePermit2Token.approve() : approveUniversalRouter.approve();
-            }
-            return quote?.protocol === "V3" ? approveV3.approve(amountIn) : approveV2.approve(amountIn);
-          }
-          return quote ? swap.swap(amount, quote) : undefined;
-        }}
+        isLoading={approveV2.isPending || approveV3.isPending || approvePermit2Token.isPending || permitSignature.isPending || swap.isPending}
+        onClick={submitSwap}
       >
-        {approveV2.isPending || approveV3.isPending || approvePermit2Token.isPending || approveUniversalRouter.isPending ? "Approving" : cta}
+        {approveV2.isPending || approveV3.isPending || approvePermit2Token.isPending ? "Approving" : cta}
       </Button>
     </Card>
   );

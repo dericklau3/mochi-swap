@@ -8,6 +8,7 @@ import {
   type Hex
 } from "viem";
 import type { Token, V4PoolKey } from "../types/token";
+import { encodePermit2SingleInput, type Permit2PermitSingle } from "./permit2";
 import { getSqrtRatioAtTick } from "./v3Routing";
 
 export const V4_ACTIONS = {
@@ -23,6 +24,7 @@ export const V4_ACTIONS = {
 } as const;
 
 export const V4_ROUTER_COMMAND = 0x10;
+export const PERMIT2_PERMIT_COMMAND = 0x0a;
 export const v4FeeOptions = [
   { label: "0.05%", fee: 500, tickSpacing: 10 },
   { label: "0.3%", fee: 3000, tickSpacing: 60 },
@@ -179,6 +181,27 @@ export function encodeV4SwapInput({
       encodeAbiParameters(parseAbiParameters("address,uint256"), [outputCurrency, amountOutMinimum])
     ]
   );
+}
+
+export function encodeV4UniversalRouterPlan({
+  swapInput,
+  permit,
+  signature
+}: {
+  swapInput: Hex;
+  permit?: Permit2PermitSingle;
+  signature?: Hex;
+}) {
+  if (!permit || !signature) {
+    return {
+      commands: `0x${V4_ROUTER_COMMAND.toString(16).padStart(2, "0")}` as Hex,
+      inputs: [swapInput]
+    };
+  }
+  return {
+    commands: `0x${PERMIT2_PERMIT_COMMAND.toString(16).padStart(2, "0")}${V4_ROUTER_COMMAND.toString(16).padStart(2, "0")}` as Hex,
+    inputs: [encodePermit2SingleInput(permit, signature), swapInput]
+  };
 }
 
 export function formatV4RouteLabel(fee: number) {

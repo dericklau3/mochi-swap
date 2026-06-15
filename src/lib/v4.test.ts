@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { decodeAbiParameters, parseAbiParameters, zeroAddress } from "viem";
+import { decodeAbiParameters, maxUint160, parseAbiParameters, zeroAddress } from "viem";
+import { universalRouterAddress } from "./contracts";
 import { defaultTokens } from "./tokens";
 import {
+  PERMIT2_PERMIT_COMMAND,
   V4_ACTIONS,
   V4_ROUTER_COMMAND,
   buildV4PoolKey,
   decodeV4PositionInfo,
+  encodeV4UniversalRouterPlan,
   encodeV4MintActions,
   encodeV4SwapInput,
   formatV4PoolPrice,
@@ -85,6 +88,40 @@ describe("v4 helpers", () => {
     );
     expect(swapConfig.minHopPriceX36).toBe(0n);
     expect(swapConfig.hookData).toBe("0x");
+  });
+
+  it("places the signed Permit2 permit before the V4 swap command", () => {
+    const key = buildV4PoolKey(defaultTokens[0], defaultTokens[2], 3000);
+    const swapInput = encodeV4SwapInput({
+      poolKey: key,
+      zeroForOne: true,
+      amountIn: 10n,
+      amountOutMinimum: 9n
+    });
+    const permit = {
+      details: {
+        token: "0x0000000000000000000000000000000000000001" as const,
+        amount: maxUint160,
+        expiration: 1000,
+        nonce: 3
+      },
+      spender: universalRouterAddress,
+      sigDeadline: 900n
+    };
+    const signature = `0x${"11".repeat(65)}` as const;
+    const plan = encodeV4UniversalRouterPlan({ swapInput, permit, signature });
+
+    expect(PERMIT2_PERMIT_COMMAND).toBe(0x0a);
+    expect(plan.commands).toBe("0x0a10");
+    expect(plan.inputs).toHaveLength(2);
+    expect(plan.inputs[1]).toBe(swapInput);
+
+    const [decodedPermit, decodedSignature] = decodeAbiParameters(
+      parseAbiParameters("((address token,uint160 amount,uint48 expiration,uint48 nonce) details,address spender,uint256 sigDeadline),bytes"),
+      plan.inputs[0]
+    );
+    expect(decodedPermit).toEqual(permit);
+    expect(decodedSignature).toBe(signature);
   });
 
   it("formats a fee-only V4 route label", () => {

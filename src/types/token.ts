@@ -59,6 +59,8 @@ export type V3PositionInfo = {
   tickLower: number;
   tickUpper: number;
   liquidity: bigint;
+  feeGrowthInside0LastX128: bigint;
+  feeGrowthInside1LastX128: bigint;
   tokensOwed0: bigint;
   tokensOwed1: bigint;
 };

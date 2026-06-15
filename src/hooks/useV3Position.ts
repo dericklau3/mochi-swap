@@ -28,6 +28,8 @@ export function useV3Position(tokenId?: bigint) {
         tickLower: raw[5],
         tickUpper: raw[6],
         liquidity: raw[7],
+        feeGrowthInside0LastX128: raw[8],
+        feeGrowthInside1LastX128: raw[9],
         tokensOwed0: raw[10],
         tokensOwed1: raw[11]
       };
