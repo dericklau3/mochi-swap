@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { decodeAbiParameters, parseAbiParameters } from "viem";
 import type { V4PositionInfo } from "../types/token";
 import { useRemoveV4Liquidity } from "./useRemoveV4Liquidity";
 
@@ -58,5 +59,21 @@ describe("useRemoveV4Liquidity", () => {
       gasPrice: 120_000_000n,
       type: "legacy"
     }));
+  });
+
+  it("encodes caller-provided minimum outputs when removing V4 liquidity", async () => {
+    const { result } = renderHook(() => useRemoveV4Liquidity());
+
+    await act(async () => {
+      await result.current.removeLiquidity(position, 50, { amount0Min: 12n, amount1Min: 34n });
+    });
+
+    const call = writeContract.mock.calls[0]?.[0];
+    const unlockData = call.args[0];
+    const [, params] = decodeAbiParameters(parseAbiParameters("bytes,bytes[]"), unlockData);
+    const [, , amount0Min, amount1Min] = decodeAbiParameters(parseAbiParameters("uint256,uint256,uint128,uint128,bytes"), params[0]);
+
+    expect(amount0Min).toBe(12n);
+    expect(amount1Min).toBe(34n);
   });
 });

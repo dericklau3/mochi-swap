@@ -26,7 +26,7 @@ export function useRemoveV3Liquidity(deadlineMinutes = 20) {
     });
   }
 
-  function removeLiquidity(position: V3PositionInfo, percent: number) {
+  function removeLiquidity(position: V3PositionInfo, percent: number, minimums: { amount0Min: bigint; amount1Min: bigint } = { amount0Min: 0n, amount1Min: 0n }) {
     if (!address || position.liquidity <= 0n) return;
     const normalizedPercent = Math.min(100, Math.max(0, Math.round(percent)));
     const liquidity = position.liquidity * BigInt(normalizedPercent) / 100n;
@@ -38,8 +38,8 @@ export function useRemoveV3Liquidity(deadlineMinutes = 20) {
       args: [{
         tokenId: position.tokenId,
         liquidity,
-        amount0Min: 0n,
-        amount1Min: 0n,
+        amount0Min: minimums.amount0Min,
+        amount1Min: minimums.amount1Min,
         deadline
       }]
     });

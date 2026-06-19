@@ -292,7 +292,7 @@ export default function App() {
           onMaxPrice={setMaxPrice}
         />
       ) : null}
-      {page === "remove" ? <RemoveLiquidityPage tokenA={liqA} tokenB={liqB} protocol={openedPosition.protocol ?? "V2"} fee={openedPosition.fee} tokenId={openedPosition.tokenId} v4PoolKey={openedPosition.v4PoolKey} percent={removePercent} onPercent={setRemovePercent} onBack={() => openPairDetail(openedPosition)} /> : null}
+      {page === "remove" ? <RemoveLiquidityPage tokenA={liqA} tokenB={liqB} protocol={openedPosition.protocol ?? "V2"} fee={openedPosition.fee} tokenId={openedPosition.tokenId} v4PoolKey={openedPosition.v4PoolKey} percent={removePercent} slippage={slippage} deadline={deadline} onPercent={setRemovePercent} onBack={() => openPairDetail(openedPosition)} /> : null}
       {page === "not-found" ? <NotFoundPage onBack={() => navigateToPage("swap")} /> : null}
 
       <TokenSelector

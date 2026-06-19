@@ -51,9 +51,7 @@ export function useAddV3Liquidity({
     const ticks = rangeMode === "custom"
       ? getV3CustomRangeTicks({ tokenA, tokenB, minPrice, maxPrice, direction: initialPriceDirection, fee })
       : getV3FullRangeTicks(fee);
-    const minimums = poolExists
-      ? { amountAMin: 0n, amountBMin: 0n }
-      : getV3MintAmountMinimums({
+    const minimums = getV3MintAmountMinimums({
           amountA,
           amountB,
           decimalsA: tokenA.decimals,

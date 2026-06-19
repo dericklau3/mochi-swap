@@ -215,6 +215,8 @@ describe("V4 collect fees placement", () => {
         tokenId={v4Position.tokenId}
         v4PoolKey={v4Position.poolKey}
         percent={50}
+        slippage="0.5"
+        deadline="20"
         onPercent={vi.fn()}
         onBack={vi.fn()}
       />

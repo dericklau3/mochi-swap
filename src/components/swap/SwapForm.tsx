@@ -23,6 +23,7 @@ import type { BestSwapQuote } from "../../hooks/useSwap";
 import { usePermit2Allowance } from "../../hooks/usePermit2Allowance";
 import { buildPermit2Single, getPermit2AuthorizationStep, getPermit2SingleTypedData } from "../../lib/permit2";
 import { formatV4RouteLabel } from "../../lib/v4";
+import { isTargetChainId } from "../../lib/network";
 
 export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, onAmount, onFrom, onTo, onFlip, onSettings }: { from: Token; to: Token; amount: string; slippage: string; deadline: string; v4Candidates: V4PoolKey[]; onAmount: (value: string) => void; onFrom: () => void; onTo: () => void; onFlip: () => void; onSettings: () => void }) {
   const { isConnected } = useAccount();
@@ -123,10 +124,12 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
   const priceImpact = reserves && quote?.protocol === "V2" ? calculatePriceImpact(amountIn, quote.amountOut, reserves.reserveA, reserves.reserveB) : "0.00%";
   const minimumReceived = calculateMinimumReceived(quote?.amountOut, BigInt(slippageBps));
   const routeLabel = quote ? quote.protocol === "V4" ? formatV4RouteLabel(quote.fee) : quote.protocol === "V3" ? `V3 ${quote.fee / 10_000}%` : "V2" : undefined;
-  const disabled = !isConnected || !amount || insufficientBalance || !quote || Boolean(quoteError) || sameRouterToken || permitSignature.isPending;
-  const cta = !isConnected ? "Connect Wallet" : sameRouterToken ? "Select different tokens" : !amount ? "Enter Amount" : insufficientBalance ? "Insufficient Balance" : needsApproval ? `Approve ${from.symbol}` : permitSignature.isPending ? "Signing" : swap.isPending ? "Pending" : "Swap";
+  const isCorrectChain = isTargetChainId(chainId);
+  const disabled = !isConnected || !isCorrectChain || !amount || insufficientBalance || !quote || Boolean(quoteError) || sameRouterToken || permitSignature.isPending;
+  const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? "Switch to BSC Testnet" : sameRouterToken ? "Select different tokens" : !amount ? "Enter Amount" : insufficientBalance ? "Insufficient Balance" : needsApproval ? `Approve ${from.symbol}` : permitSignature.isPending ? "Signing" : swap.isPending ? "Pending" : "Swap";
 
   async function submitSwap() {
+    if (!isCorrectChain) return;
     if (!quote) return;
     if (needsApproval) {
       if (quote.protocol === "V4") return approvePermit2Token.approve();
@@ -173,7 +176,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
       <Button
         variant="primary"
         className="btn-wide"
-        disabled={needsApproval ? false : disabled}
+        disabled={needsApproval ? !isCorrectChain : disabled}
         isLoading={approveV2.isPending || approveV3.isPending || approvePermit2Token.isPending || permitSignature.isPending || swap.isPending}
         onClick={submitSwap}
       >

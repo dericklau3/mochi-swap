@@ -15,15 +15,15 @@ export function useRemoveV4Liquidity(deadlineMinutes = 20) {
   const [prepareError, setPrepareError] = useState<unknown>();
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
-  async function modify(position: V4PositionInfo, percent: number) {
+  async function modify(position: V4PositionInfo, percent: number, minimums: { amount0Min: bigint; amount1Min: bigint } = { amount0Min: 0n, amount1Min: 0n }) {
     if (!address || !publicClient) return;
     const normalized = Math.min(100, Math.max(0, Math.round(percent)));
     const liquidity = position.liquidity * BigInt(normalized) / 100n;
     const unlockData = encodeV4DecreaseActions({
       tokenId: position.tokenId,
       liquidity,
-      amount0Min: 0n,
-      amount1Min: 0n,
+      amount0Min: minimums.amount0Min,
+      amount1Min: minimums.amount1Min,
       poolKey: position.poolKey,
       recipient: address
     });
@@ -45,7 +45,7 @@ export function useRemoveV4Liquidity(deadlineMinutes = 20) {
 
   const error = prepareError || write.error || receipt.error;
   return {
-    removeLiquidity: (position: V4PositionInfo, percent: number) => modify(position, percent),
+    removeLiquidity: (position: V4PositionInfo, percent: number, minimums?: { amount0Min: bigint; amount1Min: bigint }) => modify(position, percent, minimums),
     collectFees: (position: V4PositionInfo) => modify(position, 0),
     hash: write.data,
     isPending: write.isPending || receipt.isLoading,

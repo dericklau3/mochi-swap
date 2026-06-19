@@ -14,7 +14,7 @@ import { routerAddress } from "../../lib/contracts";
 import { calculateLiquidityPosition, formatPoolPrice, getPairReserves } from "../../lib/ammMath";
 import { formatTokenAmountFixed } from "../../lib/format";
 import { isTargetChainId } from "../../lib/network";
-import { calculateV3RemovalAmounts, getSqrtRatioAtTick, sortV3Tokens } from "../../lib/v3Routing";
+import { applySlippage, calculateV3RemovalAmounts, getSqrtRatioAtTick, sortV3Tokens } from "../../lib/v3Routing";
 import { sortV4Tokens } from "../../lib/v4";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
@@ -24,7 +24,7 @@ import { useState } from "react";
 import type { CSSProperties } from "react";
 import { useAccount, useChainId } from "wagmi";
 
-export function RemoveLiquidityForm({ tokenA, tokenB, protocol = "V2", fee, tokenId, v4PoolKey, percent, onPercent, onBack }: { tokenA: Token; tokenB: Token; protocol?: "V2" | "V3" | "V4"; fee?: number; tokenId?: bigint; v4PoolKey?: V4PoolKey; percent: number; onPercent: (value: number) => void; onBack: () => void }) {
+export function RemoveLiquidityForm({ tokenA, tokenB, protocol = "V2", fee, tokenId, v4PoolKey, percent, slippage, deadline, onPercent, onBack }: { tokenA: Token; tokenB: Token; protocol?: "V2" | "V3" | "V4"; fee?: number; tokenId?: bigint; v4PoolKey?: V4PoolKey; percent: number; slippage: string; deadline: string; onPercent: (value: number) => void; onBack: () => void }) {
   const { isConnected } = useAccount();
   const chainId = useChainId();
   const [priceDirection, setPriceDirection] = useState<"base" | "quote">("base");
@@ -36,9 +36,9 @@ export function RemoveLiquidityForm({ tokenA, tokenB, protocol = "V2", fee, toke
   const v4Position = v4PositionQuery.data;
   const v4Pool = useV4PoolInfo(protocol === "V4" ? (v4PoolKey ?? v4Position?.poolKey) : undefined);
   const approve = useApproveToken(pair.data?.address ?? undefined, routerAddress, true);
-  const remove = useRemoveLiquidity(tokenA, tokenB);
-  const removeV3 = useRemoveV3Liquidity();
-  const removeV4 = useRemoveV4Liquidity();
+  const remove = useRemoveLiquidity(tokenA, tokenB, Number(deadline));
+  const removeV3 = useRemoveV3Liquidity(Number(deadline));
+  const removeV4 = useRemoveV4Liquidity(Number(deadline));
   useTransactionMessage({
     hash: approve.hash,
     isSuccess: approve.isSuccess,
@@ -106,23 +106,44 @@ export function RemoveLiquidityForm({ tokenA, tokenB, protocol = "V2", fee, toke
         aIsToken0: sortedV4Tokens.aIsCurrency0
       })
     : undefined;
+  const slippageBps = Math.round(Number(slippage) * 100);
+  const v2Minimums = {
+    amountAMin: applySlippage(position.amountA, slippageBps),
+    amountBMin: applySlippage(position.amountB, slippageBps)
+  };
+  const v3Minimums = {
+    amount0Min: sortedV3Tokens.aIsToken0
+      ? applySlippage(v3RemovalAmounts?.amountA ?? 0n, slippageBps)
+      : applySlippage(v3RemovalAmounts?.amountB ?? 0n, slippageBps),
+    amount1Min: sortedV3Tokens.aIsToken0
+      ? applySlippage(v3RemovalAmounts?.amountB ?? 0n, slippageBps)
+      : applySlippage(v3RemovalAmounts?.amountA ?? 0n, slippageBps)
+  };
+  const v4Minimums = {
+    amount0Min: sortedV4Tokens.aIsCurrency0
+      ? applySlippage(v4RemovalAmounts?.amountA ?? 0n, slippageBps)
+      : applySlippage(v4RemovalAmounts?.amountB ?? 0n, slippageBps),
+    amount1Min: sortedV4Tokens.aIsCurrency0
+      ? applySlippage(v4RemovalAmounts?.amountB ?? 0n, slippageBps)
+      : applySlippage(v4RemovalAmounts?.amountA ?? 0n, slippageBps)
+  };
   const isCorrectChain = isTargetChainId(chainId);
   const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? "Switch to BSC Testnet" : isV4 && !v4Position ? "Position not found" : isV3 && !v3Position ? "Position not found" : !isV3 && !isV4 && !pair.data?.address ? "Pair not found" : !isV3 && !isV4 && needsApproval ? "Approve LP" : remove.isPending || removeV3.isPending || removeV4.isPending ? "Pending" : "Remove Liquidity";
 
   function submit() {
     if (isV4) {
-      if (v4Position) removeV4.removeLiquidity(v4Position, normalizedPercent);
+      if (v4Position) removeV4.removeLiquidity(v4Position, normalizedPercent, v4Minimums);
       return;
     }
     if (isV3) {
-      if (v3Position) removeV3.removeLiquidity(v3Position, normalizedPercent);
+      if (v3Position) removeV3.removeLiquidity(v3Position, normalizedPercent, v3Minimums);
       return;
     }
     if (needsApproval) {
       approve.approve(lpAmount);
       return;
     }
-    remove.removeLiquidity(lpAmount);
+    remove.removeLiquidity(lpAmount, v2Minimums);
   }
 
   return (

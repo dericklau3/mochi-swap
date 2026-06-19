@@ -13,17 +13,19 @@ export function useRemoveLiquidity(tokenA?: Token, tokenB?: Token, deadlineMinut
   const receipt = useWaitForTransactionReceipt({ hash: write.data });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
-  function removeLiquidity(lpAmount: bigint) {
+  function removeLiquidity(lpAmount: bigint, minimums: { amountAMin: bigint; amountBMin: bigint } = { amountAMin: 0n, amountBMin: 0n }) {
     if (!address || !tokenA || !tokenB) return;
     if (isSameRouterToken(tokenA, tokenB)) return;
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineMinutes * 60);
     if (tokenA.isNative || tokenB.isNative) {
       const erc20Token = tokenA.isNative ? tokenB : tokenA;
+      const amountTokenMin = tokenA.isNative ? minimums.amountBMin : minimums.amountAMin;
+      const amountETHMin = tokenA.isNative ? minimums.amountAMin : minimums.amountBMin;
       write.writeContract({
         address: routerAddress,
         abi: uniswapV2RouterAbi,
         functionName: "removeLiquidityETH",
-        args: [toRouterTokenAddress(erc20Token), lpAmount, 0n, 0n, address, deadline]
+        args: [toRouterTokenAddress(erc20Token), lpAmount, amountTokenMin, amountETHMin, address, deadline]
       });
       return;
     }
@@ -31,20 +33,22 @@ export function useRemoveLiquidity(tokenA?: Token, tokenB?: Token, deadlineMinut
       address: routerAddress,
       abi: uniswapV2RouterAbi,
       functionName: "removeLiquidity",
-      args: [toRouterTokenAddress(tokenA), toRouterTokenAddress(tokenB), lpAmount, 0n, 0n, address, deadline]
+      args: [toRouterTokenAddress(tokenA), toRouterTokenAddress(tokenB), lpAmount, minimums.amountAMin, minimums.amountBMin, address, deadline]
     });
   }
 
-  function removeLiquidityWithPermit(lpAmount: bigint, permit: { deadline: bigint; approveMax: boolean; v: number; r: Hex; s: Hex }) {
+  function removeLiquidityWithPermit(lpAmount: bigint, permit: { deadline: bigint; approveMax: boolean; v: number; r: Hex; s: Hex }, minimums: { amountAMin: bigint; amountBMin: bigint } = { amountAMin: 0n, amountBMin: 0n }) {
     if (!address || !tokenA || !tokenB) return;
     if (isSameRouterToken(tokenA, tokenB)) return;
     if (tokenA.isNative || tokenB.isNative) {
       const erc20Token = tokenA.isNative ? tokenB : tokenA;
+      const amountTokenMin = tokenA.isNative ? minimums.amountBMin : minimums.amountAMin;
+      const amountETHMin = tokenA.isNative ? minimums.amountAMin : minimums.amountBMin;
       write.writeContract({
         address: routerAddress,
         abi: uniswapV2RouterAbi,
         functionName: "removeLiquidityETHWithPermit",
-        args: [toRouterTokenAddress(erc20Token), lpAmount, 0n, 0n, address, permit.deadline, permit.approveMax, permit.v, permit.r, permit.s]
+        args: [toRouterTokenAddress(erc20Token), lpAmount, amountTokenMin, amountETHMin, address, permit.deadline, permit.approveMax, permit.v, permit.r, permit.s]
       });
       return;
     }
@@ -52,7 +56,7 @@ export function useRemoveLiquidity(tokenA?: Token, tokenB?: Token, deadlineMinut
       address: routerAddress,
       abi: uniswapV2RouterAbi,
       functionName: "removeLiquidityWithPermit",
-      args: [toRouterTokenAddress(tokenA), toRouterTokenAddress(tokenB), lpAmount, 0n, 0n, address, permit.deadline, permit.approveMax, permit.v, permit.r, permit.s]
+      args: [toRouterTokenAddress(tokenA), toRouterTokenAddress(tokenB), lpAmount, minimums.amountAMin, minimums.amountBMin, address, permit.deadline, permit.approveMax, permit.v, permit.r, permit.s]
     });
   }
 
