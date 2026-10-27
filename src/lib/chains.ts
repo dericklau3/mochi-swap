@@ -25,5 +25,38 @@ export const bscTestnet = defineChain({
   testnet: true
 });
 
-export const supportedChains = [bscTestnet, mainnet, bsc, sepolia, polygon, arbitrum, optimism, base] as const;
-export const targetChain = bscTestnet;
+export const robinhoodTestnet = defineChain({
+  id: 46630,
+  name: "Robinhood Testnet",
+  nativeCurrency: { decimals: 18, name: "Ether", symbol: "ETH" },
+  rpcUrls: {
+    default: { http: [import.meta.env.VITE_ROBINHOOD_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com"] }
+  },
+  blockExplorers: {
+    default: { name: "Robinhood Testnet Explorer", url: "https://explorer.testnet.chain.robinhood.com" }
+  },
+  testnet: true
+});
+
+export const appNetworks = { bscTestnet, robinhoodTestnet } as const;
+export type AppNetwork = keyof typeof appNetworks;
+// Changing the application network reloads the page so all module-level
+// configuration and in-memory form/query state share the same network.
+export const targetNetwork: AppNetwork = typeof window !== "undefined"
+  && new URLSearchParams(window.location.search).get("network") === "robinhoodTestnet"
+  ? "robinhoodTestnet" : "bscTestnet";
+export const targetChain = appNetworks[targetNetwork];
+export const supportsV3V4 = targetNetwork === "bscTestnet";
+export const supportedChains = [targetChain, bscTestnet.id === targetChain.id ? robinhoodTestnet : bscTestnet, mainnet, bsc, sepolia, polygon, arbitrum, optimism, base] as const;
+
+export function getNetworkUrl(href: string, network: AppNetwork) {
+  const url = new URL(href);
+  url.searchParams.set("network", network);
+  url.hash = "/swap";
+  return url.toString();
+}
+
+export function networkStorageKey(key: string) {
+  // Keep existing BSC tokens and positions accessible without migration.
+  return targetNetwork === "bscTestnet" ? key : `${key}:${targetChain.id}`;
+}

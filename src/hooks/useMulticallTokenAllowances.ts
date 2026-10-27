@@ -1,18 +1,19 @@
+import { targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
-import { useAccount, useChainId, usePublicClient } from "wagmi";
-import type { Address } from "viem";
+import { useAccount, usePublicClient } from "wagmi";
+import { zeroAddress, type Address } from "viem";
 import { erc20Abi } from "../lib/abis";
 import type { Token } from "../types/token";
 
 export function useMulticallTokenAllowances(tokens: Token[], spender: Address, owner?: Address) {
   const account = useAccount();
-  const chainId = useChainId();
-  const publicClient = usePublicClient();
+  const chainId = targetChain.id;
+  const publicClient = usePublicClient({ chainId: targetChain.id });
   const address = owner ?? account.address;
 
   return useQuery({
     queryKey: ["token-allowances", chainId, address, spender, tokens.map((t) => t.address).join(",")],
-    enabled: Boolean(publicClient && address && spender && tokens.length),
+    enabled: Boolean(publicClient && address && spender && spender !== zeroAddress && tokens.length),
     staleTime: 15_000,
     queryFn: async () => {
       if (!publicClient || !address) return {};

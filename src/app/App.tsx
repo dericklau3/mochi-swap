@@ -1,3 +1,4 @@
+import { supportsV3V4 } from "../lib/chains";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Token, TrackedPoolPosition } from "../types/token";
 import { defaultPoolTokens, defaultTokens } from "../lib/tokens";
@@ -30,11 +31,11 @@ export default function App() {
   const initialAddLiquidityRoute = getAddLiquidityRoute(window.location);
   const [page, setPage] = useState<PageKey>(() => getPageFromUrl(window.location));
   const [customTokens, setCustomTokens] = useState<Token[]>(() => loadCustomTokens());
-  const [poolPositions, setPoolPositions] = useState(() => loadPoolPositions());
+  const [poolPositions, setPoolPositions] = useState(() => loadPoolPositions().filter((position) => supportsV3V4 || (position.protocol ?? "V2") === "V2"));
   const tokens = useMemo(() => [...defaultTokens, ...customTokens], [customTokens]);
   const visiblePoolPositions = useMemo(() => {
     const defaultPosition = { pairAddress: "0x0000000000000000000000000000000000000000" as Address, tokenA: defaultPoolTokens[0], tokenB: defaultPoolTokens[1] };
-    const defaultV3Positions = v3FeeOptions.map((option) => ({ ...defaultPosition, protocol: "V3" as const, fee: option.fee }));
+    const defaultV3Positions = (supportsV3V4 ? v3FeeOptions : []).map((option) => ({ ...defaultPosition, protocol: "V3" as const, fee: option.fee }));
     return mergePoolPositionCandidates([defaultPosition, ...defaultV3Positions], poolPositions);
   }, [poolPositions]);
   const [fromToken, setFromToken] = useState(defaultPoolTokens[0]);
@@ -65,6 +66,7 @@ export default function App() {
   const [slippage, setSlippage] = useState("0.5");
   const [deadline, setDeadline] = useState("20");
   const v4SwapCandidates = useMemo(() => {
+    if (!supportsV3V4) return [];
     const input = toV4Currency(fromToken).toLowerCase();
     const output = toV4Currency(toToken).toLowerCase();
     if (input === output) return [];

@@ -1,5 +1,6 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
-import { useAccount, useChainId, usePublicClient } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 import { nonfungiblePositionManagerAbi } from "../lib/abis";
 import { v3PositionManagerAddress } from "../lib/contracts";
 import { isSameRouterToken } from "../lib/routerTokens";
@@ -7,13 +8,13 @@ import { sortV3Tokens } from "../lib/v3Routing";
 import type { Token, V3PositionInfo } from "../types/token";
 
 export function useV3Positions(tokenA?: Token, tokenB?: Token, fee?: number) {
-  const chainId = useChainId();
+  const chainId = targetChain.id;
   const { address } = useAccount();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: targetChain.id });
 
   return useQuery({
     queryKey: ["v3-positions", chainId, address, tokenA?.address, tokenB?.address, fee ?? "all"],
-    enabled: Boolean(publicClient && address && tokenA && tokenB && !isSameRouterToken(tokenA, tokenB)),
+    enabled: supportsV3V4 && Boolean(publicClient && address && tokenA && tokenB && !isSameRouterToken(tokenA, tokenB)),
     staleTime: 12_000,
     queryFn: async (): Promise<V3PositionInfo[]> => {
       if (!publicClient || !address || !tokenA || !tokenB) return [];

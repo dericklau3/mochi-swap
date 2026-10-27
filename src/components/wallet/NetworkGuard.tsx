@@ -14,7 +14,7 @@ export function NetworkGuard() {
       <div className="row" style={{ justifyContent: "space-between" }}>
         <span className="row">
         <AlertTriangle className="h-4 w-4" />
-        Wrong network. Please switch to BSC Testnet.
+        Wrong network. Please switch to {targetChain.name}.
         </span>
         <Button isLoading={isPending} onClick={() => switchChain({ chainId: targetChain.id })}>
           Switch Network

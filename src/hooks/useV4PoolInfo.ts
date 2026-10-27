@@ -1,18 +1,19 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
-import { useChainId, usePublicClient } from "wagmi";
+import { usePublicClient } from "wagmi";
 import { v4StateViewAbi } from "../lib/abis";
 import { v4StateViewAddress } from "../lib/contracts";
 import { getV4PoolId } from "../lib/v4";
 import type { V4PoolKey } from "../types/token";
 
 export function useV4PoolInfo(poolKey?: V4PoolKey) {
-  const chainId = useChainId();
-  const publicClient = usePublicClient();
+  const chainId = targetChain.id;
+  const publicClient = usePublicClient({ chainId: targetChain.id });
   const poolId = poolKey ? getV4PoolId(poolKey) : undefined;
 
   return useQuery({
     queryKey: ["v4-pool-info", chainId, poolId],
-    enabled: Boolean(publicClient && poolId),
+    enabled: supportsV3V4 && Boolean(publicClient && poolId),
     retry: false,
     staleTime: 12_000,
     queryFn: async () => {

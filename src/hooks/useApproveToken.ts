@@ -1,3 +1,4 @@
+import { targetChain } from "../lib/chains";
 import { useMemo } from "react";
 import type { Address } from "viem";
 import { maxUint256 } from "viem";
@@ -8,13 +9,14 @@ import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export function useApproveToken(token?: Address, spender?: Address, isLp = false) {
   const write = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash: write.data });
+  const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   return useMemo(() => ({
     approve: (amount: bigint = maxUint256) => {
       if (!token || !spender) return;
       write.writeContract({
+        chainId: targetChain.id,
         address: token,
         abi: isLp ? uniswapV2PairAbi : erc20Abi,
         functionName: "approve",

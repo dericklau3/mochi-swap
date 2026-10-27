@@ -1,17 +1,18 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
-import { useChainId, usePublicClient } from "wagmi";
+import { usePublicClient } from "wagmi";
 import { v4PositionManagerAbi } from "../lib/abis";
 import { v4PositionManagerAddress } from "../lib/contracts";
 import { decodeV4PositionInfo } from "../lib/v4";
 import type { V4PositionInfo } from "../types/token";
 
 export function useV4Position(tokenId?: bigint) {
-  const chainId = useChainId();
-  const publicClient = usePublicClient();
+  const chainId = targetChain.id;
+  const publicClient = usePublicClient({ chainId: targetChain.id });
 
   return useQuery({
     queryKey: ["v4-position", chainId, tokenId?.toString()],
-    enabled: Boolean(publicClient && tokenId !== undefined),
+    enabled: supportsV3V4 && Boolean(publicClient && tokenId !== undefined),
     staleTime: 12_000,
     queryFn: async (): Promise<V4PositionInfo | undefined> => {
       if (!publicClient || tokenId === undefined) return undefined;

@@ -1,5 +1,6 @@
+import { targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
-import { useAccount, useChainId, usePublicClient } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 import type { Address } from "viem";
 import { zeroAddress } from "viem";
 import { erc20Abi, uniswapV2FactoryAbi, uniswapV2PairAbi } from "../lib/abis";
@@ -8,9 +9,9 @@ import { isSameRouterToken, toRouterTokenAddress } from "../lib/routerTokens";
 import type { PairInfo, Token } from "../types/token";
 
 export function useMulticallPairInfo(tokenA?: Token, tokenB?: Token) {
-  const chainId = useChainId();
+  const chainId = targetChain.id;
   const { address } = useAccount();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: targetChain.id });
 
   return useQuery({
     queryKey: ["pair-info", chainId, address, tokenA?.address, tokenB?.address],

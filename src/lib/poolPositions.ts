@@ -1,8 +1,9 @@
+import { networkStorageKey } from "./chains";
 import { isAddress, zeroAddress, type Address } from "viem";
 import type { Token, TrackedPoolPosition } from "../types/token";
 import { toRouterTokenAddress } from "./routerTokens";
 
-const POOL_POSITIONS_KEY = "mochi-swap:pool-positions";
+const POOL_POSITIONS_KEY = networkStorageKey("mochi-swap:pool-positions");
 
 export function loadPoolPositions(storage: Pick<Storage, "getItem"> | undefined = typeof window === "undefined" ? undefined : window.localStorage) {
   if (!storage) return [];

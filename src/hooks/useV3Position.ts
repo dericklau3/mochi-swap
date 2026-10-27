@@ -1,16 +1,17 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
-import { useChainId, usePublicClient } from "wagmi";
+import { usePublicClient } from "wagmi";
 import { nonfungiblePositionManagerAbi } from "../lib/abis";
 import { v3PositionManagerAddress } from "../lib/contracts";
 import type { V3PositionInfo } from "../types/token";
 
 export function useV3Position(tokenId?: bigint) {
-  const chainId = useChainId();
-  const publicClient = usePublicClient();
+  const chainId = targetChain.id;
+  const publicClient = usePublicClient({ chainId: targetChain.id });
 
   return useQuery({
     queryKey: ["v3-position", chainId, tokenId?.toString()],
-    enabled: Boolean(publicClient && tokenId !== undefined),
+    enabled: supportsV3V4 && Boolean(publicClient && tokenId !== undefined),
     staleTime: 12_000,
     queryFn: async (): Promise<V3PositionInfo | undefined> => {
       if (!publicClient || tokenId === undefined) return undefined;

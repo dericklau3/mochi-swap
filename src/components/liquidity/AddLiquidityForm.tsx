@@ -1,3 +1,4 @@
+import { targetChain } from "../../lib/chains";
 import { ArrowLeftRight } from "lucide-react";
 import { formatUnits, parseUnits, zeroAddress, type Address } from "viem";
 import type { Token, TrackedPoolPosition, V4PoolKey } from "../../types/token";
@@ -98,7 +99,7 @@ export function AddLiquidityForm({
 }) {
   const { isConnected } = useAccount();
   const chainId = useChainId();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: targetChain.id });
   const balances = useMulticallTokenBalances([tokenA, tokenB]);
   const isV3 = liquidityMode === "V3";
   const isV4 = liquidityMode === "V4";
@@ -251,7 +252,7 @@ export function AddLiquidityForm({
   const needB = !tokenB.isNative && parsed.b > 0n && (allowances.data?.[tokenB.address] ?? 0n) < parsed.b;
   const insufficient = parsed.a > (balances.data?.[tokenA.address] ?? 0n) || parsed.b > (balances.data?.[tokenB.address] ?? 0n);
   const isCorrectChain = isTargetChainId(chainId);
-  const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? "Switch to BSC Testnet" : sameRouterToken ? "Select different tokens" : !amountA || !amountB ? "Enter Amounts" : insufficient ? "Insufficient Balance" : needA ? `Approve ${tokenA.symbol}` : needB ? `Approve ${tokenB.symbol}` : add.isPending ? "Pending" : "Supply";
+  const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? `Switch to ${targetChain.name}` : sameRouterToken ? "Select different tokens" : !amountA || !amountB ? "Enter Amounts" : insufficient ? "Insufficient Balance" : needA ? `Approve ${tokenA.symbol}` : needB ? `Approve ${tokenB.symbol}` : add.isPending ? "Pending" : "Supply";
   const currentV3Price = formatV3PoolPrice({
     tokenA,
     tokenB,
@@ -279,7 +280,7 @@ export function AddLiquidityForm({
   const rangeReady = !isV3 || effectiveRangeMode === "full" || (Number(effectiveMinPrice) > 0 && Number(effectiveMaxPrice) > Number(effectiveMinPrice));
   const positionReady = !isV3Increase || Boolean(existingV3Position);
   const v3HasAmount = amountA !== "" || amountB !== "";
-  const v3Cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? "Switch to BSC Testnet" : sameRouterToken ? "Select different tokens" : !positionReady ? "Loading position" : !initialPriceReady ? "Set initial price" : !rangeReady ? "Set valid range" : !v3HasAmount ? "Enter Amounts" : insufficient ? "Insufficient Balance" : needA ? `Approve ${tokenA.symbol}` : needB ? `Approve ${tokenB.symbol}` : addV3.isPending ? "Pending" : isV3Increase ? "Increase V3 Liquidity" : v3PoolExists ? "Add V3 Liquidity" : "Create V3 Pool";
+  const v3Cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? `Switch to ${targetChain.name}` : sameRouterToken ? "Select different tokens" : !positionReady ? "Loading position" : !initialPriceReady ? "Set initial price" : !rangeReady ? "Set valid range" : !v3HasAmount ? "Enter Amounts" : insufficient ? "Insufficient Balance" : needA ? `Approve ${tokenA.symbol}` : needB ? `Approve ${tokenB.symbol}` : addV3.isPending ? "Pending" : isV3Increase ? "Increase V3 Liquidity" : v3PoolExists ? "Add V3 Liquidity" : "Create V3 Pool";
   const v3Disabled = !isConnected || !isCorrectChain || sameRouterToken || insufficient || !positionReady || v3Cta === "Set initial price" || v3Cta === "Set valid range" || v3Cta === "Enter Amounts";
   const now = BigInt(Math.floor(Date.now() / 1000));
   const v4StepA = tokenA.isNative ? "READY" : getPermit2AuthorizationStep({
@@ -303,7 +304,7 @@ export function AddLiquidityForm({
   const v4PositionReady = !isV4Increase || Boolean(v4Position.data);
   const v4HasAmount = parsed.a > 0n || parsed.b > 0n;
   const v4Cta = !isConnected ? "Connect Wallet"
-    : !isCorrectChain ? "Switch to BSC Testnet"
+    : !isCorrectChain ? `Switch to ${targetChain.name}`
       : !v4PositionReady ? "Loading position"
             : v4PermitLoading ? "Loading allowance"
             : !v4InitialPriceReady ? "Set initial price"
@@ -613,7 +614,7 @@ export function AddLiquidityForm({
           </div>
         </div>
       ) : null}
-      {sameRouterToken ? <p className="notice warn">{isV4 ? "Select two different V4 currencies." : "BNB and WBNB use the same wrapped asset. Select a different token pair."}</p> : null}
+      {sameRouterToken ? <p className="notice warn">{isV4 ? "Select two different V4 currencies." : "Native and wrapped tokens use the same asset. Select a different token pair."}</p> : null}
       <Button
         variant="primary"
         className="btn-wide"

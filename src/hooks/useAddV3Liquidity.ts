@@ -1,3 +1,4 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { encodeFunctionData, parseUnits } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { nonfungiblePositionManagerAbi } from "../lib/abis";
@@ -36,11 +37,11 @@ export function useAddV3Liquidity({
 }) {
   const { address } = useAccount();
   const write = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash: write.data });
+  const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   function addLiquidity(amountA: string, amountB: string) {
-    if (!address || !tokenA || !tokenB) return;
+    if (!supportsV3V4 || !address || !tokenA || !tokenB) return;
     const desiredA = parseUnits(amountA || "0", tokenA.decimals);
     const desiredB = parseUnits(amountB || "0", tokenB.decimals);
     if (desiredA <= 0n && desiredB <= 0n) return;
@@ -98,6 +99,7 @@ export function useAddV3Liquidity({
           functionName: "refundETH"
         });
         write.writeContract({
+          chainId: targetChain.id,
           address: v3PositionManagerAddress,
           abi: nonfungiblePositionManagerAbi,
           functionName: "multicall",
@@ -107,6 +109,7 @@ export function useAddV3Liquidity({
         return;
       }
       write.writeContract({
+        chainId: targetChain.id,
         address: v3PositionManagerAddress,
         abi: nonfungiblePositionManagerAbi,
         functionName: "increaseLiquidity",
@@ -132,6 +135,7 @@ export function useAddV3Liquidity({
         args: [sorted.token0Address, sorted.token1Address, fee, sqrtPriceX96]
       });
       write.writeContract({
+        chainId: targetChain.id,
         address: v3PositionManagerAddress,
         abi: nonfungiblePositionManagerAbi,
         functionName: "multicall",
@@ -142,6 +146,7 @@ export function useAddV3Liquidity({
     }
     if (nativeValue) {
       write.writeContract({
+        chainId: targetChain.id,
         address: v3PositionManagerAddress,
         abi: nonfungiblePositionManagerAbi,
         functionName: "multicall",
@@ -151,6 +156,7 @@ export function useAddV3Liquidity({
       return;
     }
     write.writeContract({
+      chainId: targetChain.id,
       address: v3PositionManagerAddress,
       abi: nonfungiblePositionManagerAbi,
       functionName: "mint",

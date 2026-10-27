@@ -1,6 +1,7 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
 import { zeroAddress, type Address } from "viem";
-import { useChainId, usePublicClient } from "wagmi";
+import { usePublicClient } from "wagmi";
 import { uniswapV3FactoryAbi, uniswapV3PoolAbi } from "../lib/abis";
 import { v3FactoryAddress } from "../lib/contracts";
 import { isSameRouterToken } from "../lib/routerTokens";
@@ -16,13 +17,13 @@ export type V3PoolInfo = {
 };
 
 export function useV3PoolInfo(tokenA?: Token, tokenB?: Token, feeLabel: string | number = "0.3%") {
-  const chainId = useChainId();
-  const publicClient = usePublicClient();
+  const chainId = targetChain.id;
+  const publicClient = usePublicClient({ chainId: targetChain.id });
   const fee = getV3FeeOption(feeLabel).fee;
 
   return useQuery({
     queryKey: ["v3-pool-info", chainId, tokenA?.address, tokenB?.address, fee],
-    enabled: Boolean(publicClient && tokenA && tokenB && !isSameRouterToken(tokenA, tokenB)),
+    enabled: supportsV3V4 && Boolean(publicClient && tokenA && tokenB && !isSameRouterToken(tokenA, tokenB)),
     staleTime: 12_000,
     queryFn: async (): Promise<V3PoolInfo> => {
       if (!publicClient || !tokenA || !tokenB) return { address: null, fee };

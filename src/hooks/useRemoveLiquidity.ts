@@ -1,3 +1,4 @@
+import { targetChain } from "../lib/chains";
 import type { Hex } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { uniswapV2RouterAbi } from "../lib/abis";
@@ -10,7 +11,7 @@ import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 export function useRemoveLiquidity(tokenA?: Token, tokenB?: Token, deadlineMinutes = 20) {
   const { address } = useAccount();
   const write = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash: write.data });
+  const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   function removeLiquidity(lpAmount: bigint, minimums: { amountAMin: bigint; amountBMin: bigint } = { amountAMin: 0n, amountBMin: 0n }) {
@@ -22,6 +23,7 @@ export function useRemoveLiquidity(tokenA?: Token, tokenB?: Token, deadlineMinut
       const amountTokenMin = tokenA.isNative ? minimums.amountBMin : minimums.amountAMin;
       const amountETHMin = tokenA.isNative ? minimums.amountAMin : minimums.amountBMin;
       write.writeContract({
+        chainId: targetChain.id,
         address: routerAddress,
         abi: uniswapV2RouterAbi,
         functionName: "removeLiquidityETH",
@@ -30,6 +32,7 @@ export function useRemoveLiquidity(tokenA?: Token, tokenB?: Token, deadlineMinut
       return;
     }
     write.writeContract({
+      chainId: targetChain.id,
       address: routerAddress,
       abi: uniswapV2RouterAbi,
       functionName: "removeLiquidity",
@@ -45,6 +48,7 @@ export function useRemoveLiquidity(tokenA?: Token, tokenB?: Token, deadlineMinut
       const amountTokenMin = tokenA.isNative ? minimums.amountBMin : minimums.amountAMin;
       const amountETHMin = tokenA.isNative ? minimums.amountAMin : minimums.amountBMin;
       write.writeContract({
+        chainId: targetChain.id,
         address: routerAddress,
         abi: uniswapV2RouterAbi,
         functionName: "removeLiquidityETHWithPermit",
@@ -53,6 +57,7 @@ export function useRemoveLiquidity(tokenA?: Token, tokenB?: Token, deadlineMinut
       return;
     }
     write.writeContract({
+      chainId: targetChain.id,
       address: routerAddress,
       abi: uniswapV2RouterAbi,
       functionName: "removeLiquidityWithPermit",

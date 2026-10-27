@@ -1,3 +1,4 @@
+import { supportsV3V4 } from "./chains";
 import { isAddress, type Address } from "viem";
 import type { PageKey } from "../pages/types";
 
@@ -32,6 +33,11 @@ function isPageKey(value: string): value is PageKey {
 }
 
 export function getPageFromUrl(url: Pick<Location, "hash" | "pathname">): PageKey {
+  if (!supportsV3V4) {
+    const [path, query = ""] = url.hash.replace(/^#\/?/, "").split("?");
+    const protocol = new URLSearchParams(query).get("protocol")?.toUpperCase();
+    if (/^add\/v[34](?:\/|$)/i.test(path) || ((path === "pair" || path === "remove") && (protocol === "V3" || protocol === "V4"))) return "not-found";
+  }
   const hashPage = url.hash.replace(/^#\/?/, "").split(/[/?]/)[0];
   if (hashPage) return isPageKey(hashPage) ? hashPage : "not-found";
 

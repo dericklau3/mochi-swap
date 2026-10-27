@@ -1,5 +1,6 @@
+import { targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
-import { useChainId, usePublicClient } from "wagmi";
+import { usePublicClient } from "wagmi";
 import type { Address } from "viem";
 import { erc20Abi } from "../lib/abis";
 import type { Token } from "../types/token";
@@ -7,8 +8,8 @@ import type { Token } from "../types/token";
 type Metadata = Pick<Token, "address" | "name" | "symbol" | "decimals">;
 
 export function useMulticallTokenMetadata(addresses: Address[]) {
-  const chainId = useChainId();
-  const publicClient = usePublicClient();
+  const chainId = targetChain.id;
+  const publicClient = usePublicClient({ chainId: targetChain.id });
 
   return useQuery({
     queryKey: ["token-metadata", chainId, addresses.join(",")],

@@ -1,3 +1,4 @@
+import { targetChain } from "../../lib/chains";
 import { ArrowLeftRight } from "lucide-react";
 import type { Token, V4PoolKey } from "../../types/token";
 import { useMulticallPairInfo } from "../../hooks/useMulticallPairInfo";
@@ -128,7 +129,7 @@ export function RemoveLiquidityForm({ tokenA, tokenB, protocol = "V2", fee, toke
       : applySlippage(v4RemovalAmounts?.amountA ?? 0n, slippageBps)
   };
   const isCorrectChain = isTargetChainId(chainId);
-  const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? "Switch to BSC Testnet" : isV4 && !v4Position ? "Position not found" : isV3 && !v3Position ? "Position not found" : !isV3 && !isV4 && !pair.data?.address ? "Pair not found" : !isV3 && !isV4 && needsApproval ? "Approve LP" : remove.isPending || removeV3.isPending || removeV4.isPending ? "Pending" : "Remove Liquidity";
+  const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? `Switch to ${targetChain.name}` : isV4 && !v4Position ? "Position not found" : isV3 && !v3Position ? "Position not found" : !isV3 && !isV4 && !pair.data?.address ? "Pair not found" : !isV3 && !isV4 && needsApproval ? "Approve LP" : remove.isPending || removeV3.isPending || removeV4.isPending ? "Pending" : "Remove Liquidity";
 
   function submit() {
     if (isV4) {

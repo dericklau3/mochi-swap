@@ -1,6 +1,21 @@
-import type { Address } from "viem";
+import { zeroAddress, type Address } from "viem";
+import { supportsV3V4, targetNetwork } from "./chains";
 
 export const CONTRACTS = {
+  robinhoodTestnet: {
+    weth: { address: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address },
+    uniswapV2Factory: {
+      address: "0xa0cec339C549BB10b9720744CdAfb15A21B085A9" as Address,
+      args: { feeToSetter: "0xD524a42103c81abEe242870058F4A28b192d5720" as Address }
+    },
+    uniswapV2Router: {
+      address: "0xdd67C669F804e36F496Eb228a361A465a1DDDAac" as Address,
+      args: {
+        factory: "0xa0cec339C549BB10b9720744CdAfb15A21B085A9" as Address,
+        weth: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address
+      }
+    }
+  },
   bscTestnet: {
     weth: {
       address: "0x04E0459121DB7D49AE932428762a44B616E967D6" as Address
@@ -60,15 +75,17 @@ export const CONTRACTS = {
   }
 } as const;
 
-export const routerAddress = CONTRACTS.bscTestnet.uniswapV2Router.address;
-export const factoryAddress = CONTRACTS.bscTestnet.uniswapV2Factory.address;
-export const v3FactoryAddress = CONTRACTS.bscTestnet.uniswapV3Factory.address;
-export const v3PositionManagerAddress = CONTRACTS.bscTestnet.nonfungiblePositionManager.address;
-export const v3QuoterAddress = CONTRACTS.bscTestnet.quoterV2.address;
-export const v3SwapRouterAddress = CONTRACTS.bscTestnet.swapRouter.address;
-export const permit2Address = CONTRACTS.bscTestnet.permit2.address;
-export const v4PoolManagerAddress = CONTRACTS.bscTestnet.v4PoolManager.address;
-export const v4PositionManagerAddress = CONTRACTS.bscTestnet.v4PositionManager.address;
-export const v4StateViewAddress = CONTRACTS.bscTestnet.v4StateView.address;
-export const v4QuoterAddress = CONTRACTS.bscTestnet.v4Quoter.address;
-export const universalRouterAddress = CONTRACTS.bscTestnet.universalRouter.address;
+export const activeContracts = CONTRACTS[targetNetwork];
+
+export const routerAddress = activeContracts.uniswapV2Router.address;
+export const factoryAddress = activeContracts.uniswapV2Factory.address;
+export const v3FactoryAddress = supportsV3V4 ? CONTRACTS.bscTestnet.uniswapV3Factory.address : zeroAddress;
+export const v3PositionManagerAddress = supportsV3V4 ? CONTRACTS.bscTestnet.nonfungiblePositionManager.address : zeroAddress;
+export const v3QuoterAddress = supportsV3V4 ? CONTRACTS.bscTestnet.quoterV2.address : zeroAddress;
+export const v3SwapRouterAddress = supportsV3V4 ? CONTRACTS.bscTestnet.swapRouter.address : zeroAddress;
+export const permit2Address = supportsV3V4 ? CONTRACTS.bscTestnet.permit2.address : zeroAddress;
+export const v4PoolManagerAddress = supportsV3V4 ? CONTRACTS.bscTestnet.v4PoolManager.address : zeroAddress;
+export const v4PositionManagerAddress = supportsV3V4 ? CONTRACTS.bscTestnet.v4PositionManager.address : zeroAddress;
+export const v4StateViewAddress = supportsV3V4 ? CONTRACTS.bscTestnet.v4StateView.address : zeroAddress;
+export const v4QuoterAddress = supportsV3V4 ? CONTRACTS.bscTestnet.v4Quoter.address : zeroAddress;
+export const universalRouterAddress = supportsV3V4 ? CONTRACTS.bscTestnet.universalRouter.address : zeroAddress;

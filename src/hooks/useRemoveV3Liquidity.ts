@@ -1,3 +1,4 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { encodeFunctionData, maxUint128 } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { nonfungiblePositionManagerAbi } from "../lib/abis";
@@ -9,11 +10,11 @@ import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 export function useRemoveV3Liquidity(deadlineMinutes = 20) {
   const { address } = useAccount();
   const write = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash: write.data });
+  const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   function getCollectCall(position: V3PositionInfo) {
-    if (!address) return;
+    if (!supportsV3V4 || !address) return;
     return encodeFunctionData({
       abi: nonfungiblePositionManagerAbi,
       functionName: "collect",
@@ -27,7 +28,7 @@ export function useRemoveV3Liquidity(deadlineMinutes = 20) {
   }
 
   function removeLiquidity(position: V3PositionInfo, percent: number, minimums: { amount0Min: bigint; amount1Min: bigint } = { amount0Min: 0n, amount1Min: 0n }) {
-    if (!address || position.liquidity <= 0n) return;
+    if (!supportsV3V4 || !address || position.liquidity <= 0n) return;
     const normalizedPercent = Math.min(100, Math.max(0, Math.round(percent)));
     const liquidity = position.liquidity * BigInt(normalizedPercent) / 100n;
     if (liquidity <= 0n) return;
@@ -46,6 +47,7 @@ export function useRemoveV3Liquidity(deadlineMinutes = 20) {
     const collectCall = getCollectCall(position);
     if (!collectCall) return;
     write.writeContract({
+      chainId: targetChain.id,
       address: v3PositionManagerAddress,
       abi: nonfungiblePositionManagerAbi,
       functionName: "multicall",
@@ -57,6 +59,7 @@ export function useRemoveV3Liquidity(deadlineMinutes = 20) {
     const collectCall = getCollectCall(position);
     if (!collectCall) return;
     write.writeContract({
+      chainId: targetChain.id,
       address: v3PositionManagerAddress,
       abi: nonfungiblePositionManagerAbi,
       functionName: "multicall",

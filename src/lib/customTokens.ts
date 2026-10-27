@@ -1,8 +1,9 @@
+import { networkStorageKey } from "./chains";
 import { isAddress } from "viem";
 import type { Token } from "../types/token";
 import { defaultTokens } from "./tokens";
 
-const CUSTOM_TOKENS_KEY = "mochi-swap:custom-tokens";
+const CUSTOM_TOKENS_KEY = networkStorageKey("mochi-swap:custom-tokens");
 
 export function loadCustomTokens(storage: Pick<Storage, "getItem"> | undefined = typeof window === "undefined" ? undefined : window.localStorage) {
   if (!storage) return [];

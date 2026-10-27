@@ -1,8 +1,8 @@
 import type { Address } from "viem";
 import type { Token } from "../types/token";
-import { CONTRACTS } from "./contracts";
+import { activeContracts } from "./contracts";
 
-export const wrappedNativeAddress = CONTRACTS.bscTestnet.weth.address;
+export const wrappedNativeAddress = activeContracts.weth.address;
 
 export function toRouterTokenAddress(token: Token): Address {
   return token.isNative ? wrappedNativeAddress : token.address;

@@ -1,13 +1,14 @@
+import { targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
-import { useAccount, useChainId, usePublicClient } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 import type { Address } from "viem";
 import { erc20Abi } from "../lib/abis";
 import type { Token } from "../types/token";
 
 export function useMulticallTokenBalances(tokens: Token[], owner?: Address) {
   const account = useAccount();
-  const chainId = useChainId();
-  const publicClient = usePublicClient();
+  const chainId = targetChain.id;
+  const publicClient = usePublicClient({ chainId: targetChain.id });
   const address = owner ?? account.address;
 
   return useQuery({

@@ -1,3 +1,4 @@
+import { supportsV3V4 } from "../../lib/chains";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 
@@ -13,7 +14,7 @@ export function CreatePositionModal({ onClose, onChoose }: { onClose: () => void
   return (
     <Modal title="Create position" onClose={onClose}>
       <div className="version-list">
-        {versions.map(([version, title, copy]) => (
+        {versions.filter(([version]) => supportsV3V4 || version === "V2").map(([version, title, copy]) => (
           <Button
             key={version}
             className="version-card"

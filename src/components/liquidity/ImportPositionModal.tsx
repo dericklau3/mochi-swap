@@ -1,3 +1,4 @@
+import { supportsV3V4 } from "../../lib/chains";
 import { useState } from "react";
 import { zeroAddress, type Address } from "viem";
 import type { Token, TrackedPoolPosition } from "../../types/token";
@@ -71,7 +72,7 @@ export function ImportPositionModal({
     <Modal title="Import position" onClose={onClose} large>
       <div className="segmented range-segment" style={{ marginBottom: 16 }}>
         <button type="button" className={version === "V2" ? "is-active" : ""} onClick={() => setVersion("V2")}>V2 pair</button>
-        <button type="button" className={version === "V4" ? "is-active" : ""} onClick={() => setVersion("V4")}>V4 NFT</button>
+        {supportsV3V4 ? <button type="button" className={version === "V4" ? "is-active" : ""} onClick={() => setVersion("V4")}>V4 NFT</button> : null}
       </div>
       {version === "V4" ? (
         <>

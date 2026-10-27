@@ -1,3 +1,4 @@
+import { targetChain } from "./chains";
 export function getReadableError(error: unknown): string {
   const message = typeof error === "string" ? error : error instanceof Error ? error.message : "";
   const lower = message.toLowerCase();
@@ -10,7 +11,7 @@ export function getReadableError(error: unknown): string {
   if (lower.includes("price slippage check")) return "Deposit amounts do not match the V3 price and range.";
   if (lower.includes("0x0ca968d8") || lower.includes("notapproved")) return "Connected wallet is not approved to manage this V4 position.";
   if (lower.includes("execution reverted") || lower.includes("reverted")) return "Transaction reverted by the contract.";
-  if (lower.includes("wrong network") || lower.includes("unsupported chain")) return "Wrong network. Please switch to BSC Testnet.";
+  if (lower.includes("wrong network") || lower.includes("unsupported chain")) return `Wrong network. Please switch to ${targetChain.name}.`;
   if (lower.includes("invalid token address")) return "Invalid token address.";
   if (lower.includes("metadata")) return "Token metadata read failed.";
   if (lower.includes("pair not found")) return "Pair not found.";

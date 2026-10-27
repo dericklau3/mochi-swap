@@ -1,5 +1,5 @@
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
-import { targetChain } from "../../lib/chains";
+import { appNetworks, getNetworkUrl, targetChain, targetNetwork, type AppNetwork } from "../../lib/chains";
 import { cn } from "../../lib/utils";
 
 export function NetworkPill() {
@@ -9,9 +9,21 @@ export function NetworkPill() {
   const chainId = account.chainId ?? fallbackChainId;
   const wrongNetwork = chainId !== targetChain.id;
   return (
-    <button className={cn("network-pill", wrongNetwork && "is-wrong")} disabled={isPending} onClick={() => wrongNetwork ? switchChain({ chainId: targetChain.id }) : undefined}>
-      <span className={wrongNetwork ? "tiny-dot danger" : "status-dot"} />
-      {wrongNetwork ? "Wrong Network" : "BSC Testnet"}
-    </button>
+    <div className="row network-controls">
+      <select
+        aria-label="Application network"
+        className="network-pill network-select"
+        value={targetNetwork}
+        onChange={(event) => window.location.assign(getNetworkUrl(window.location.href, event.target.value as AppNetwork))}
+      >
+        {Object.entries(appNetworks).map(([key, chain]) => <option key={key} value={key}>{chain.name}</option>)}
+      </select>
+      {wrongNetwork ? (
+        <button className={cn("network-pill", "is-wrong")} disabled={isPending} onClick={() => switchChain({ chainId: targetChain.id })}>
+          <span className="tiny-dot danger" />
+          Switch wallet
+        </button>
+      ) : null}
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+import { targetChain } from "../../lib/chains";
 import { ArrowDownUp, Settings } from "lucide-react";
 import { parseUnits } from "viem";
 import type { Token, V4PoolKey } from "../../types/token";
@@ -126,7 +127,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
   const routeLabel = quote ? quote.protocol === "V4" ? formatV4RouteLabel(quote.fee) : quote.protocol === "V3" ? `V3 ${quote.fee / 10_000}%` : "V2" : undefined;
   const isCorrectChain = isTargetChainId(chainId);
   const disabled = !isConnected || !isCorrectChain || !amount || insufficientBalance || !quote || Boolean(quoteError) || sameRouterToken || permitSignature.isPending;
-  const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? "Switch to BSC Testnet" : sameRouterToken ? "Select different tokens" : !amount ? "Enter Amount" : insufficientBalance ? "Insufficient Balance" : needsApproval ? `Approve ${from.symbol}` : permitSignature.isPending ? "Signing" : swap.isPending ? "Pending" : "Swap";
+  const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? `Switch to ${targetChain.name}` : sameRouterToken ? "Select different tokens" : !amount ? "Enter Amount" : insufficientBalance ? "Insufficient Balance" : needsApproval ? `Approve ${from.symbol}` : permitSignature.isPending ? "Signing" : swap.isPending ? "Pending" : "Swap";
 
   async function submitSwap() {
     if (!isCorrectChain) return;
@@ -172,7 +173,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
       />
       {balances.isLoading || v2Allowances.isLoading || v3Allowances.isLoading || permit2TokenAllowances.isLoading || permit2Allowance.isLoading ? <p className="notice">Loading balances and allowance...</p> : null}
       {quoteError ? <p className="notice danger">{quoteError}</p> : null}
-      {sameRouterToken ? <p className="notice warn">BNB and WBNB route to the same wrapped asset. Select a different pair.</p> : null}
+      {sameRouterToken ? <p className="notice warn">Native and wrapped tokens route to the same asset. Select a different pair.</p> : null}
       <Button
         variant="primary"
         className="btn-wide"

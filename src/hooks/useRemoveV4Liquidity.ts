@@ -1,3 +1,4 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { useState } from "react";
 import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { v4PositionManagerAbi } from "../lib/abis";
@@ -9,14 +10,14 @@ import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export function useRemoveV4Liquidity(deadlineMinutes = 20) {
   const { address } = useAccount();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: targetChain.id });
   const write = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash: write.data });
+  const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   const [prepareError, setPrepareError] = useState<unknown>();
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   async function modify(position: V4PositionInfo, percent: number, minimums: { amount0Min: bigint; amount1Min: bigint } = { amount0Min: 0n, amount1Min: 0n }) {
-    if (!address || !publicClient) return;
+    if (!supportsV3V4 || !address || !publicClient) return;
     const normalized = Math.min(100, Math.max(0, Math.round(percent)));
     const liquidity = position.liquidity * BigInt(normalized) / 100n;
     const unlockData = encodeV4DecreaseActions({
@@ -31,6 +32,7 @@ export function useRemoveV4Liquidity(deadlineMinutes = 20) {
       setPrepareError(undefined);
       const gasPrice = await publicClient.getGasPrice();
       write.writeContract({
+        chainId: targetChain.id,
         address: v4PositionManagerAddress,
         abi: v4PositionManagerAbi,
         functionName: "modifyLiquidities",

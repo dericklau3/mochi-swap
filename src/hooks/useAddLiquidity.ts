@@ -1,3 +1,4 @@
+import { targetChain } from "../lib/chains";
 import { parseUnits } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { uniswapV2RouterAbi } from "../lib/abis";
@@ -10,7 +11,7 @@ import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 export function useAddLiquidity(tokenA?: Token, tokenB?: Token, slippageBps = 50, deadlineMinutes = 20) {
   const { address } = useAccount();
   const write = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash: write.data });
+  const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   function addLiquidity(amountA: string, amountB: string) {
@@ -28,6 +29,7 @@ export function useAddLiquidity(tokenA?: Token, tokenB?: Token, slippageBps = 50
       const minNative = tokenA.isNative ? minA : minB;
       const minToken = tokenA.isNative ? minB : minA;
       write.writeContract({
+        chainId: targetChain.id,
         address: routerAddress,
         abi: uniswapV2RouterAbi,
         functionName: "addLiquidityETH",
@@ -37,6 +39,7 @@ export function useAddLiquidity(tokenA?: Token, tokenB?: Token, slippageBps = 50
       return;
     }
     write.writeContract({
+      chainId: targetChain.id,
       address: routerAddress,
       abi: uniswapV2RouterAbi,
       functionName: "addLiquidity",

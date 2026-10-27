@@ -1,7 +1,7 @@
 import { createPublicClient, http } from "viem";
-import { bscTestnet } from "./chains";
+import { targetChain } from "./chains";
 
 export const publicClient = createPublicClient({
-  chain: bscTestnet,
-  transport: http(import.meta.env.VITE_BSC_TESTNET_RPC_URL || bscTestnet.rpcUrls.default.http[0])
+  chain: targetChain,
+  transport: http(targetChain.rpcUrls.default.http[0])
 });

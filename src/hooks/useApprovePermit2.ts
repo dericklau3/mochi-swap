@@ -1,3 +1,4 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { useMemo } from "react";
 import { maxUint48, maxUint160, type Address } from "viem";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
@@ -8,13 +9,14 @@ import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export function useApprovePermit2(token?: Address, spender?: Address) {
   const write = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash: write.data });
+  const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   return useMemo(() => ({
     approve: () => {
-      if (!token || !spender) return;
+      if (!supportsV3V4 || !token || !spender) return;
       write.writeContract({
+        chainId: targetChain.id,
         address: permit2Address,
         abi: permit2Abi,
         functionName: "approve",

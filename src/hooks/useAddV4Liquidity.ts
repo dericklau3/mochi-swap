@@ -1,3 +1,4 @@
+import { supportsV3V4, targetChain } from "../lib/chains";
 import { encodeFunctionData, parseUnits, type Hex } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { v4PositionManagerAbi } from "../lib/abis";
@@ -50,11 +51,11 @@ export function useAddV4Liquidity({
 }) {
   const { address } = useAccount();
   const write = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash: write.data });
+  const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   function addLiquidity(amountA: string, amountB: string, permit?: { batch: Permit2PermitBatch; signature: Hex }) {
-    if (!address || !tokenA || !tokenB) return;
+    if (!supportsV3V4 || !address || !tokenA || !tokenB) return;
     const amountAValue = parseUnits(amountA || "0", tokenA.decimals);
     const amountBValue = parseUnits(amountB || "0", tokenB.decimals);
     const sorted = sortV4Tokens(tokenA, tokenB);
@@ -101,6 +102,7 @@ export function useAddV4Liquidity({
     calls.push(modifyCall);
     if (calls.length > 1) {
       write.writeContract({
+        chainId: targetChain.id,
         address: v4PositionManagerAddress,
         abi: v4PositionManagerAbi,
         functionName: "multicall",
@@ -110,6 +112,7 @@ export function useAddV4Liquidity({
       return;
     }
     write.writeContract({
+      chainId: targetChain.id,
       address: v4PositionManagerAddress,
       abi: v4PositionManagerAbi,
       functionName: "modifyLiquidities",

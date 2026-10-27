@@ -3,7 +3,7 @@ import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import { walletConnectWallet } from "@rainbow-me/rainbowkit/wallets";
 import { createConfig, http } from "wagmi";
 import { arbitrum, base, bsc, mainnet, optimism, polygon, sepolia } from "viem/chains";
-import { bscTestnet, supportedChains } from "./chains";
+import { bscTestnet, robinhoodTestnet, supportedChains } from "./chains";
 
 const walletConnectProjectId = "da0be758f55ea2cd52999060284c020d";
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || walletConnectProjectId;
@@ -49,6 +49,7 @@ export const wagmiConfig = createConfig({
   chains: supportedChains,
   transports: {
     [bscTestnet.id]: http(import.meta.env.VITE_BSC_TESTNET_RPC_URL || bscTestnet.rpcUrls.default.http[0]),
+    [robinhoodTestnet.id]: http(robinhoodTestnet.rpcUrls.default.http[0]),
     [mainnet.id]: http(),
     [bsc.id]: http(),
     [sepolia.id]: http(),

@@ -1,5 +1,37 @@
 # Mochi Swap
 
+## 网络使用
+
+顶部网络选择器支持 BSC Testnet 和 Robinhood Testnet，默认 BSC Testnet。切换应用网络会重新加载页面并回到 Swap；钱包网络不一致时，点击 `Switch wallet` 或页面中的 `Switch Network` 切换钱包。
+
+- BSC Testnet：支持 V2 / V3 / V4。
+- Robinhood Testnet：支持 V2 兑换、ERC20 授权、创建/添加流动性、导入 LP 仓位和移除流动性。V3 / V4 暂未配置。
+- 自定义代币和 LP 仓位按网络隔离，原有 BSC 数据保留。Robinhood 初始代币为 ETH / WETH；两者在 V2 中对应同一资产，需通过代币选择器导入另一个 ERC20 地址后交易或创建池。兑换还需要相应池中已有流动性。
+
+可直接通过 `?network=robinhoodTestnet#/swap` 打开 Robinhood 网络。复制 `.env.example` 为 `.env.local` 后可配置 `VITE_ROBINHOOD_TESTNET_RPC_URL`，留空使用官方公共 RPC；更改环境变量后需重启开发服务或重新构建。
+
+## Robinhood Testnet
+
+网络参数来自 [Robinhood 官方连接文档](https://docs.robinhood.com/chain/connecting/)。
+
+| 参数 | 值 |
+| --- | --- |
+| Chain ID | `46630` |
+| 原生币 | ETH（18 decimals） |
+| RPC | `https://rpc.testnet.chain.robinhood.com` |
+| 浏览器 | [Robinhood Testnet Explorer](https://explorer.testnet.chain.robinhood.com) |
+
+### Uniswap V2 合约地址
+
+| 合约 | 地址 |
+| --- | --- |
+| WETH | [0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4](https://explorer.testnet.chain.robinhood.com/address/0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4) |
+| `uniswapV2Factory` | [0xa0cec339C549BB10b9720744CdAfb15A21B085A9](https://explorer.testnet.chain.robinhood.com/address/0xa0cec339C549BB10b9720744CdAfb15A21B085A9) |
+| `uniswapV2Router` | [0xdd67C669F804e36F496Eb228a361A465a1DDDAac](https://explorer.testnet.chain.robinhood.com/address/0xdd67C669F804e36F496Eb228a361A465a1DDDAac) |
+
+Factory 构造参数 `feeToSetter`：`0xD524a42103c81abEe242870058F4A28b192d5720`。
+Router 构造参数 `factory`：`0xa0cec339C549BB10b9720744CdAfb15A21B085A9`，`weth`：`0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4`。
+
 ## bsctest 合约地址
 
 ### 代币
