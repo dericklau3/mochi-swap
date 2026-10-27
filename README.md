@@ -2,11 +2,11 @@
 
 ## 网络使用
 
-顶部网络选择器支持 BSC Testnet 和 Robinhood Testnet，默认 BSC Testnet。切换应用网络会重新加载页面并回到 Swap；钱包网络不一致时，点击 `Switch wallet` 或页面中的 `Switch Network` 切换钱包。
+顶部网络选择器支持 BSC Testnet 和 Robinhood Testnet，默认 BSC Testnet。已连接钱包时，选择网络会先请求钱包切链，成功后重新加载页面并回到 Swap；取消或失败会保留原应用网络并显示提示。未连接钱包时可直接切换应用网络。若之后在钱包中单独切换到了其他网络，可通过页面中的 `Switch Network` 恢复。
 
 - BSC Testnet：支持 V2 / V3 / V4。
 - Robinhood Testnet：支持 V2 / V3 兑换、ERC20 授权、创建/添加和移除流动性及仓位管理。V4 暂未配置。
-- 自定义代币和 LP 仓位按网络隔离，原有 BSC 数据保留。Robinhood 初始代币为 ETH / WETH；两者在 V2 中对应同一资产，需通过代币选择器导入另一个 ERC20 地址后交易或创建池。兑换还需要相应池中已有流动性。
+- 自定义代币和 LP 仓位按网络隔离，原有 BSC 数据保留。Robinhood 默认代币为 ETH / WETH / USDG，默认交易对为 ETH / USDG。ETH 与 WETH 在 V2 / V3 中对应同一资产；其他 ERC20 可通过代币选择器导入。兑换需要相应池中已有流动性。
 
 可直接通过 `?network=robinhoodTestnet#/swap` 打开 Robinhood 网络。复制 `.env.example` 为 `.env.local` 后可配置 `VITE_ROBINHOOD_TESTNET_RPC_URL`，留空使用官方公共 RPC；更改环境变量后需重启开发服务或重新构建。
 
@@ -21,18 +21,29 @@
 | RPC | `https://rpc.testnet.chain.robinhood.com` |
 | 浏览器 | [Robinhood Testnet Explorer](https://explorer.testnet.chain.robinhood.com) |
 
-### Uniswap V2 合约地址
+### 代币
 
 | 合约 | 地址 |
 | --- | --- |
 | WETH | [0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4](https://explorer.testnet.chain.robinhood.com/address/0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4) |
+| USDG | [0x3095d36DfE71EEa8b73028809973d3dC53C1c2aA](https://explorer.testnet.chain.robinhood.com/address/0x3095d36DfE71EEa8b73028809973d3dC53C1c2aA) |
+
+ETH 为原生币，ETH / WETH 精度为 18 位，USDG 精度为 6 位。
+
+USDG 使用项目指定地址，已通过 Robinhood 测试网 RPC 核对名称 `Global Dollar`、符号 `USDG` 和 6 位精度。
+本地图标来源：[ETH / Trust Wallet assets](https://github.com/trustwallet/assets/blob/master/blockchains/ethereum/info/logo.png)、[USDG 官方品牌资源](https://globaldollar.com/brand)。WETH 共用 ETH 图标。
+
+### Uniswap V2
+
+| 合约 | 地址 |
+| --- | --- |
 | `uniswapV2Factory` | [0xa0cec339C549BB10b9720744CdAfb15A21B085A9](https://explorer.testnet.chain.robinhood.com/address/0xa0cec339C549BB10b9720744CdAfb15A21B085A9) |
 | `uniswapV2Router` | [0xdd67C669F804e36F496Eb228a361A465a1DDDAac](https://explorer.testnet.chain.robinhood.com/address/0xdd67C669F804e36F496Eb228a361A465a1DDDAac) |
 
 Factory 构造参数 `feeToSetter`：`0xD524a42103c81abEe242870058F4A28b192d5720`。
 Router 构造参数 `factory`：`0xa0cec339C549BB10b9720744CdAfb15A21B085A9`，`weth`：`0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4`。
 
-### Uniswap V3 合约地址
+### Uniswap V3
 
 | 合约 | 地址 |
 | --- | --- |

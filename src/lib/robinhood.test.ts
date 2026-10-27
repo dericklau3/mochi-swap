@@ -12,7 +12,7 @@ describe("Robinhood application network", () => {
     vi.resetModules();
     const { targetChain } = await import("./chains");
     const { routerAddress, factoryAddress, v3FactoryAddress, v4PoolManagerAddress } = await import("./contracts");
-    const { defaultTokens } = await import("./tokens");
+    const { defaultTokens, defaultPoolTokens } = await import("./tokens");
     const { toRouterTokenAddress, isSameRouterToken } = await import("./routerTokens");
     const { publicClient } = await import("./viem");
     expect(targetChain.id).toBe(46630);
@@ -21,9 +21,12 @@ describe("Robinhood application network", () => {
     expect(factoryAddress).toBe("0xa0cec339C549BB10b9720744CdAfb15A21B085A9");
     expect(v3FactoryAddress).toBe("0x352A92bAc9F383915B48B27237136eCA7Ea6485B");
     expect(v4PoolManagerAddress).toBe(zeroAddress);
-    expect(defaultTokens.map((token) => token.symbol)).toEqual(["ETH", "WETH"]);
+    expect(defaultTokens.map((token) => token.symbol)).toEqual(["ETH", "WETH", "USDG"]);
     expect(toRouterTokenAddress(defaultTokens[0])).toBe("0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4");
     expect(isSameRouterToken(defaultTokens[0], defaultTokens[1])).toBe(true);
+    expect(defaultPoolTokens.map((token) => token.symbol)).toEqual(["ETH", "USDG"]);
+    expect(isSameRouterToken(defaultPoolTokens[0], defaultPoolTokens[1])).toBe(false);
+    expect(defaultTokens[2]).toMatchObject({ address: "0x3095d36DfE71EEa8b73028809973d3dC53C1c2aA", decimals: 6 });
   });
 
   it("does not load BSC tokens or positions into Robinhood and preserves both on save", async () => {

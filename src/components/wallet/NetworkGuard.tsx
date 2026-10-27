@@ -1,14 +1,13 @@
-import { useAccount, useChainId, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import { AlertTriangle } from "lucide-react";
 import { targetChain } from "../../lib/chains";
 import { Button } from "../ui/Button";
 
 export function NetworkGuard() {
-  const fallbackChainId = useChainId();
   const account = useAccount();
-  const chainId = account.chainId ?? fallbackChainId;
+  const chainId = account.chainId;
   const { switchChain, isPending } = useSwitchChain();
-  if (chainId === targetChain.id) return null;
+  if (!account.isConnected || account.isReconnecting || chainId === undefined || chainId === targetChain.id) return null;
   return (
     <div className="notice warn" style={{ marginBottom: 16 }}>
       <div className="row" style={{ justifyContent: "space-between" }}>

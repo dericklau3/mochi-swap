@@ -3,6 +3,7 @@ import { supportsV4, targetNetwork } from "./chains";
 
 export const CONTRACTS = {
   robinhoodTestnet: {
+    usdg: { address: "0x3095d36DfE71EEa8b73028809973d3dC53C1c2aA" as Address },
     weth: { address: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address },
     uniswapV2Factory: {
       address: "0xa0cec339C549BB10b9720744CdAfb15A21B085A9" as Address,
