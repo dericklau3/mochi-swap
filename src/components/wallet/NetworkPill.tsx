@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronDown, Layers, Loader2 } from "lucide-react";
 import { useAccount, useSwitchChain } from "wagmi";
 import { appNetworks, getNetworkUrl, targetNetwork, type AppNetwork } from "../../lib/chains";
 
@@ -28,7 +29,8 @@ export function NetworkPill() {
   }
 
   return (
-    <div className="row network-controls">
+    <div className="row network-controls" data-network={selection}>
+      <span className="network-emblem" aria-hidden="true"><Layers size={13} strokeWidth={2} /></span>
       <select
         aria-label="Application network"
         aria-busy={isSwitching}
@@ -39,6 +41,9 @@ export function NetworkPill() {
       >
         {Object.entries(appNetworks).map(([key, chain]) => <option key={key} value={key}>{chain.name}</option>)}
       </select>
+      <span className="network-chevron" aria-hidden="true">
+        {isSwitching ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} strokeWidth={2} />}
+      </span>
       {error ? <p className="network-switch-error" role="alert">{error}</p> : null}
     </div>
   );
