@@ -83,7 +83,8 @@ export function getV3PositionRangePrices({
   direction: "base" | "quote";
 }) {
   const sorted = sortV3Tokens(tokenA, tokenB);
-  const decimalScale = 10 ** (sorted.token1.decimals - sorted.token0.decimals);
+  // Tick ratios use atomic units; display prices use whole-token units.
+  const decimalScale = 10 ** (sorted.token0.decimals - sorted.token1.decimals);
   const token1PerToken0AtTick = (tick: number) => 1.0001 ** tick * decimalScale;
   const lowerToken1PerToken0 = token1PerToken0AtTick(tickLower);
   const upperToken1PerToken0 = token1PerToken0AtTick(tickUpper);
@@ -280,7 +281,8 @@ export function getV3InitialSqrtPriceX96({
   const sorted = sortV3Tokens(tokenA, tokenB);
   const priceTokenBPerTokenA = direction === "quote" ? numericPrice : 1 / numericPrice;
   const token1PerToken0 = sorted.aIsToken0 ? priceTokenBPerTokenA : 1 / priceTokenBPerTokenA;
-  const decimalAdjustedPrice = token1PerToken0 * 10 ** (sorted.token0.decimals - sorted.token1.decimals);
+  // Convert whole-token token1/token0 into atomic-unit token1/token0.
+  const decimalAdjustedPrice = token1PerToken0 * 10 ** (sorted.token1.decimals - sorted.token0.decimals);
   if (!Number.isFinite(decimalAdjustedPrice) || decimalAdjustedPrice <= 0) return undefined;
   const sqrtPrice = Math.sqrt(decimalAdjustedPrice);
   const sqrtPriceX96 = BigInt(Math.floor(sqrtPrice * Number(q96)));
@@ -317,13 +319,15 @@ export function getV3CustomRangeTicks({
   const sorted = sortV3Tokens(tokenA, tokenB);
   const toToken1PerToken0 = (priceTokenBPerTokenA: number) => {
     const token1PerToken0 = sorted.aIsToken0 ? priceTokenBPerTokenA : 1 / priceTokenBPerTokenA;
-    return token1PerToken0 * 10 ** (sorted.token0.decimals - sorted.token1.decimals);
+    return token1PerToken0 * 10 ** (sorted.token1.decimals - sorted.token0.decimals);
   };
   const lowerPrice = direction === "quote" ? min : 1 / max;
   const upperPrice = direction === "quote" ? max : 1 / min;
   const { tickSpacing } = getV3FeeOption(fee);
-  const lower = getNearestUsableTick(toToken1PerToken0(lowerPrice), tickSpacing);
-  const upper = getNearestUsableTick(toToken1PerToken0(upperPrice), tickSpacing);
+  // Inverting the token order reverses the price bounds.
+  const ticks = [lowerPrice, upperPrice].map((price) => getNearestUsableTick(toToken1PerToken0(price), tickSpacing));
+  const lower = Math.min(...ticks);
+  const upper = Math.max(...ticks);
   return lower < upper ? { tickLower: lower, tickUpper: upper } : getV3FullRangeTicks(fee);
 }
 

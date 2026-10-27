@@ -286,7 +286,7 @@ export function getV4CustomRangeTicks({
   const sorted = sortV4Tokens(tokenA, tokenB);
   const priceBPerA = direction === "quote" ? [min, max] : [1 / max, 1 / min];
   const token1PerToken0 = priceBPerA.map((price) => (
-    (sorted.aIsCurrency0 ? price : 1 / price) * 10 ** (sorted.token0.decimals - sorted.token1.decimals)
+    (sorted.aIsCurrency0 ? price : 1 / price) * 10 ** (sorted.token1.decimals - sorted.token0.decimals)
   ));
   const { tickSpacing } = getV4FeeOption(fee);
   const ticks = token1PerToken0.map((price) => Math.round(Math.log(price) / Math.log(1.0001) / tickSpacing) * tickSpacing);
@@ -311,7 +311,7 @@ export function getV4InitialSqrtPriceX96({
   const sorted = sortV4Tokens(tokenA, tokenB);
   const priceBPerA = direction === "quote" ? numericPrice : 1 / numericPrice;
   const token1PerToken0 = (sorted.aIsCurrency0 ? priceBPerA : 1 / priceBPerA)
-    * 10 ** (sorted.token0.decimals - sorted.token1.decimals);
+    * 10 ** (sorted.token1.decimals - sorted.token0.decimals);
   const tick = Math.max(-887272, Math.min(887272, Math.round(Math.log(token1PerToken0) / Math.log(1.0001))));
   return getSqrtRatioAtTick(tick);
 }
