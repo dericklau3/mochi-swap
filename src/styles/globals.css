@@ -794,14 +794,16 @@
       .btn { padding-inline: 13px; }
       .hide-mobile { display: none; }
     }
-/* Keep native selection and keyboard support with a custom visual shell. */
+/* App-owned dropdown, including the option surface and keyboard focus. */
 .network-controls { position: relative; }
 .network-controls .network-select {
-  appearance: none;
-  -webkit-appearance: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
   width: 208px;
   height: 42px;
-  padding: 0 34px 0 43px;
+  padding: 0 13px 0 11px;
   border: 1px solid #e5daf5;
   border-radius: 14px;
   background: linear-gradient(135deg, #fff 10%, #faf6ff 100%);
@@ -818,20 +820,20 @@
   background: linear-gradient(135deg, #fff, #f5efff);
   box-shadow: 0 3px 10px rgba(65, 24, 132, .07);
 }
-.network-controls .network-select:focus-visible {
+.network-controls .network-select:focus-visible,
+.network-controls .network-select.is-open {
   outline: none;
   border-color: #a78bda;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, .14);
 }
 .network-controls .network-select:disabled { cursor: wait; opacity: .65; }
 .network-emblem, .network-chevron {
-  position: absolute;
+  flex: 0 0 auto;
   pointer-events: none;
   display: grid;
   place-items: center;
 }
 .network-emblem {
-  left: 11px;
   width: 23px;
   height: 23px;
   border: 1px solid #e4d7fa;
@@ -839,24 +841,63 @@
   background: #eee5ff;
   color: #8753d3;
 }
-.network-controls[data-network="robinhoodTestnet"] .network-emblem {
+.network-emblem[data-network="robinhoodTestnet"] {
   border-color: #cce9de;
   background: #e3f6ed;
   color: #30876a;
 }
-.network-chevron { right: 13px; color: #9682b2; }
+.network-chevron { margin-left: auto; color: #9682b2; transition: transform .18s ease; }
+.network-select.is-open .network-chevron { transform: rotate(180deg); }
+.network-name { white-space: nowrap; }
+.network-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 40;
+  width: 264px;
+  padding: 7px;
+  border: 1px solid #e9dff6;
+  border-radius: 18px;
+  background: rgba(255, 253, 255, .98);
+  box-shadow: 0 14px 36px rgba(62, 30, 104, .12), 0 3px 8px rgba(62, 30, 104, .04);
+}
+.network-menu-label { display: block; padding: 7px 10px 9px; font-size: 10px; letter-spacing: 1.1px; font-weight: 700; color: #a28bb8; }
+.network-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 62px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--fg);
+  transition: background .15s ease, border-color .15s ease;
+}
+.network-option + .network-option { margin-top: 3px; }
+.network-option .network-emblem { width: 32px; height: 32px; border-radius: 10px; }
+.network-option-copy { display: grid; gap: 3px; }
+.network-option-copy strong { font-size: 13px; font-weight: 650; letter-spacing: -.1px; }
+.network-option-copy > span { font-size: 11px; color: #9a89ac; }
+.network-option.is-selected { background: #f4edff; border-color: #e7dafb; }
+.network-option:hover { background: #f8f4fc; }
+.network-option:focus-visible { outline: 2px solid #b596e3; outline-offset: -2px; background: #f4edff; }
+.network-check { margin-left: auto; color: #8b5cc6; flex-shrink: 0; }
 @media (max-width: 920px) {
   .app-actions .network-select { display: inline-flex; }
 }
 @media (max-width: 600px) {
   .brand-name { display: none; }
-  .network-controls .network-select { width: 176px; height: 40px; padding-left: 36px; padding-right: 26px; font-size: 12px; }
-  .network-emblem { left: 9px; width: 20px; height: 20px; border-radius: 7px; }
-  .network-chevron { right: 9px; }
+  .network-controls .network-select { width: 176px; height: 40px; padding-left: 9px; padding-right: 9px; gap: 6px; font-size: 12px; }
+  .network-select .network-emblem { width: 20px; height: 20px; border-radius: 7px; }
+  .network-menu { right: auto; left: 0; width: min(264px, calc(100vw - 96px)); }
 }
 @media (max-width: 360px) {
   .network-controls .network-select { width: 148px; padding-left: 12px; }
-  .network-emblem { display: none; }
+  .network-select .network-emblem { display: none; }
 }
 .network-switch-error {
   position: absolute;

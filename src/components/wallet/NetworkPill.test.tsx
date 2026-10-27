@@ -26,15 +26,20 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+function chooseRobinhood() {
+  fireEvent.click(screen.getByRole("button", { name: /Application network/ }));
+  fireEvent.click(screen.getByRole("menuitemradio", { name: /Robinhood Testnet/ }));
+}
+
 describe("application network switching", () => {
   it("waits for wallet switching before navigating to the selected network", async () => {
     let finishSwitch!: () => void;
     switchChainAsync.mockImplementation(() => new Promise<void>((resolve) => { finishSwitch = resolve; }));
     render(<NetworkPill />);
-    fireEvent.change(screen.getByRole("combobox", { name: "Application network" }), { target: { value: "robinhoodTestnet" } });
+    chooseRobinhood();
     expect(switchChainAsync).toHaveBeenCalledWith({ chainId: 46630 });
     expect(window.location.hash).toBe("");
-    expect(screen.getByRole("combobox")).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Application network/ })).toBeDisabled();
     await act(async () => finishSwitch());
     await waitFor(() => expect(window.location.hash).toBe("#network-switched"));
   });
@@ -42,11 +47,11 @@ describe("application network switching", () => {
   it("keeps the application network and shows an error when the wallet rejects switching", async () => {
     switchChainAsync.mockRejectedValue(new Error("User rejected request"));
     render(<NetworkPill />);
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "robinhoodTestnet" } });
+    chooseRobinhood();
     await waitFor(() => expect(screen.getByRole("alert")).toBeVisible());
     expect(window.location.hash).toBe("");
-    expect(screen.getByRole("combobox")).toHaveValue("bscTestnet");
-    expect(screen.getByRole("combobox")).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Application network/ })).toHaveTextContent("BSC Testnet");
+    expect(screen.getByRole("button", { name: /Application network/ })).toBeEnabled();
   });
 
   it("switches the application without a wallet request when disconnected", async () => {
@@ -55,7 +60,7 @@ describe("application network switching", () => {
     render(<><NetworkPill /><NetworkGuard /></>);
     expect(screen.queryByText("Switch wallet")).not.toBeInTheDocument();
     expect(screen.queryByText(/Wrong network/)).not.toBeInTheDocument();
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "robinhoodTestnet" } });
+    chooseRobinhood();
     await waitFor(() => expect(window.location.hash).toBe("#network-switched"));
     expect(switchChainAsync).not.toHaveBeenCalled();
   });
@@ -64,8 +69,32 @@ describe("application network switching", () => {
     wallet.isReconnecting = true;
     wallet.chainId = 46630;
     render(<><NetworkPill /><NetworkGuard /></>);
-    expect(screen.getByRole("combobox")).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Application network/ })).toBeDisabled();
     expect(screen.queryByText(/Wrong network/)).not.toBeInTheDocument();
+  });
+
+  it("supports keyboard navigation and Escape without switching networks", () => {
+    render(<NetworkPill />);
+    const trigger = screen.getByRole("button", { name: /Application network/ });
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    const selected = screen.getByRole("menuitemradio", { name: /BSC Testnet/ });
+    expect(selected).toHaveAttribute("aria-checked", "true");
+    expect(selected).toHaveFocus();
+    fireEvent.keyDown(selected, { key: "ArrowDown" });
+    const robinhood = screen.getByRole("menuitemradio", { name: /Robinhood Testnet/ });
+    expect(robinhood).toHaveFocus();
+    fireEvent.keyDown(robinhood, { key: "Escape" });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(switchChainAsync).not.toHaveBeenCalled();
+  });
+
+  it("dismisses the menu on outside clicks", () => {
+    render(<NetworkPill />);
+    fireEvent.click(screen.getByRole("button", { name: /Application network/ }));
+    expect(screen.getByRole("menu")).toBeVisible();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
   it("offers one recovery control when a connected wallet is on another chain", () => {
