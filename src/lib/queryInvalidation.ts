@@ -7,6 +7,8 @@ const DEX_MUTATION_QUERY_KEYS = new Set([
   "pair-info",
   "v3-pool-info",
   "v3-position",
+  "v3-positions",
+  "v3-wallet-pools",
   "v3-unclaimed-fees",
   "v4-pool-info",
   "v4-position",

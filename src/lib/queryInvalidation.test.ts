@@ -6,6 +6,8 @@ describe("query invalidation", () => {
     expect(shouldInvalidateAfterDexMutation(["token-balances", 97])).toBe(true);
     expect(shouldInvalidateAfterDexMutation(["token-allowances", 97])).toBe(true);
     expect(shouldInvalidateAfterDexMutation(["pair-info", 97])).toBe(true);
+    expect(shouldInvalidateAfterDexMutation(["v3-positions", 46630, "owner"])).toBe(true);
+    expect(shouldInvalidateAfterDexMutation(["v3-wallet-pools", 46630, "owner"])).toBe(true);
   });
 
   it("keeps static metadata cached", () => {

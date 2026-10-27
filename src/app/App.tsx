@@ -22,6 +22,8 @@ import { getV3FeeOption, v3FeeOptions } from "../lib/v3Routing";
 import { buildV4PoolKey, getV4FullRangeTicks, getV4PoolId, toV4Currency, v4FeeOptions } from "../lib/v4";
 import { getAddLiquidityRoute, getInitialLiquidityRoute, getPageFromUrl, getPageHash, getPairDetailHash, getPairDetailRoute, getRemoveLiquidityHash, getRemoveLiquidityRoute, type AddLiquidityRoute, type PairDetailRoute } from "../lib/appRouting";
 
+import { useWalletV3Pools } from "../hooks/useWalletV3Pools";
+
 type TokenTarget = "from" | "to" | "liqA" | "liqB";
 type PoolModal = "createPosition" | "importPosition";
 type AddLiquidityOrigin = "pool" | "pair";
@@ -32,12 +34,22 @@ export default function App() {
   const [page, setPage] = useState<PageKey>(() => getPageFromUrl(window.location));
   const [customTokens, setCustomTokens] = useState<Token[]>(() => loadCustomTokens());
   const [poolPositions, setPoolPositions] = useState(() => loadPoolPositions().filter((position) => position.protocol === "V4" ? supportsV4 : position.protocol === "V3" ? supportsV3 : true));
-  const tokens = useMemo(() => [...defaultTokens, ...customTokens], [customTokens]);
+  const knownTokens = useMemo(() => [...defaultTokens, ...customTokens], [customTokens]);
+  const walletV3Pools = useWalletV3Pools(knownTokens);
+  const tokens = useMemo(() => {
+    const result = [...knownTokens];
+    for (const pool of walletV3Pools.data ?? []) {
+      for (const token of [pool.tokenA, pool.tokenB]) {
+        if (!result.some((known) => known.address.toLowerCase() === token.address.toLowerCase())) result.push(token);
+      }
+    }
+    return result;
+  }, [knownTokens, walletV3Pools.data]);
   const visiblePoolPositions = useMemo(() => {
     const defaultPosition = { pairAddress: "0x0000000000000000000000000000000000000000" as Address, tokenA: defaultPoolTokens[0], tokenB: defaultPoolTokens[1] };
     const defaultV3Positions = (supportsV3 ? v3FeeOptions : []).map((option) => ({ ...defaultPosition, protocol: "V3" as const, fee: option.fee }));
-    return mergePoolPositionCandidates([defaultPosition, ...defaultV3Positions], poolPositions);
-  }, [poolPositions]);
+    return mergePoolPositionCandidates([...(walletV3Pools.data ?? []), defaultPosition, ...defaultV3Positions], poolPositions);
+  }, [poolPositions, walletV3Pools.data]);
   const [fromToken, setFromToken] = useState(defaultPoolTokens[0]);
   const [toToken, setToToken] = useState(defaultPoolTokens[1]);
   const initialOpenedPosition = initialLiquidityRoute?.page === "add"
@@ -139,6 +151,8 @@ export default function App() {
         }
       }
     };
+    // Newly discovered token metadata can resolve a route that was incomplete on load.
+    syncPageFromUrl();
     window.addEventListener("hashchange", syncPageFromUrl);
     window.addEventListener("popstate", syncPageFromUrl);
     return () => {
@@ -234,7 +248,7 @@ export default function App() {
           onSettings={() => setSettingsOpen(true)}
         />
       ) : null}
-      {page === "pool" ? <PoolPage positions={visiblePoolPositions} onCreate={() => setPoolModal("createPosition")} onImport={() => setPoolModal("importPosition")} onTrack={trackPoolPosition} onOpen={openPairDetail} /> : null}
+      {page === "pool" ? <PoolPage discoveryLoading={walletV3Pools.isLoading} discoveryError={Boolean(walletV3Pools.error)} onRetryDiscovery={walletV3Pools.refetch} positions={visiblePoolPositions} onCreate={() => setPoolModal("createPosition")} onImport={() => setPoolModal("importPosition")} onTrack={trackPoolPosition} onOpen={openPairDetail} /> : null}
       {page === "pair" ? (
         <PairDetailPage
           tokenA={liqA}

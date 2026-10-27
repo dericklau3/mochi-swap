@@ -17,7 +17,7 @@ export function PoolCard({ position, onTrack, onOpen }: { position: TrackedPoolP
   const protocol = position.protocol ?? "V2";
   const { address } = useAccount();
   const pair = useMulticallPairInfo(tokenA, tokenB);
-  const v3Positions = useV3Positions(protocol === "V3" ? tokenA : undefined, protocol === "V3" ? tokenB : undefined, protocol === "V3" ? position.fee : undefined);
+  const v3Positions = useV3Positions(protocol === "V3" ? tokenA : undefined, protocol === "V3" ? tokenB : undefined, protocol === "V3" ? position.fee : undefined, protocol === "V3");
   const v3Pool = useV3PoolInfo(protocol === "V3" ? tokenA : undefined, protocol === "V3" ? tokenB : undefined, position.fee ?? 3000);
   const v4Position = useV4Position(protocol === "V4" ? position.tokenId : undefined);
   const v4Pool = useV4PoolInfo(protocol === "V4" ? (position.v4PoolKey ?? v4Position.data?.poolKey) : undefined);

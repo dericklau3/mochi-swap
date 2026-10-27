@@ -49,7 +49,7 @@ export function PairDetailPage({
   const chainId = useChainId();
   const [priceDirection, setPriceDirection] = useState<"base" | "quote">("base");
   const pair = useMulticallPairInfo(tokenA, tokenB);
-  const v3Positions = useV3Positions(protocol === "V3" ? tokenA : undefined, protocol === "V3" ? tokenB : undefined, fee);
+  const v3Positions = useV3Positions(protocol === "V3" ? tokenA : undefined, protocol === "V3" ? tokenB : undefined, fee, protocol === "V3");
   const directV3Position = useV3Position(protocol === "V3" ? tokenId : undefined);
   const v3Pool = useV3PoolInfo(protocol === "V3" ? tokenA : undefined, protocol === "V3" ? tokenB : undefined, fee ?? 3000);
   const v4PositionQuery = useV4Position(protocol === "V4" ? tokenId : undefined);
