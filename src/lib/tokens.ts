@@ -4,9 +4,9 @@ import { zeroAddress } from "viem";
 import bnbLogo from "../assets/bnb-token.png";
 import usdtLogo from "../assets/usdt-token.png";
 
-import { supportsV3V4 } from "./chains";
+import { targetNetwork } from "./chains";
 
-export const defaultTokens: Token[] = supportsV3V4 ? [
+export const defaultTokens: Token[] = targetNetwork === "bscTestnet" ? [
   {
     address: zeroAddress,
     symbol: "BNB",
@@ -34,4 +34,4 @@ export const defaultTokens: Token[] = supportsV3V4 ? [
   { address: activeContracts.weth.address, symbol: "WETH", name: "Wrapped Ether", decimals: 18 }
 ];
 
-export const defaultPoolTokens = [defaultTokens[0], defaultTokens[supportsV3V4 ? 2 : 1]];
+export const defaultPoolTokens = [defaultTokens[0], defaultTokens[targetNetwork === "bscTestnet" ? 2 : 1]];

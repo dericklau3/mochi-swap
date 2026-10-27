@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV4, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount, usePublicClient } from "wagmi";
 import type { Address } from "viem";
@@ -12,7 +12,7 @@ export function usePermit2Allowance(token?: Address, spender?: Address) {
 
   return useQuery({
     queryKey: ["permit2-allowance", chainId, address, token, spender],
-    enabled: supportsV3V4 && Boolean(publicClient && address && token && spender),
+    enabled: supportsV4 && Boolean(publicClient && address && token && spender),
     staleTime: 12_000,
     queryFn: async () => {
       if (!publicClient || !address || !token || !spender) return undefined;

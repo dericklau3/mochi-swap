@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV4, targetChain } from "../lib/chains";
 import { encodeFunctionData, parseUnits, type Hex } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { v4PositionManagerAbi } from "../lib/abis";
@@ -55,7 +55,7 @@ export function useAddV4Liquidity({
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   function addLiquidity(amountA: string, amountB: string, permit?: { batch: Permit2PermitBatch; signature: Hex }) {
-    if (!supportsV3V4 || !address || !tokenA || !tokenB) return;
+    if (!supportsV4 || !address || !tokenA || !tokenB) return;
     const amountAValue = parseUnits(amountA || "0", tokenA.decimals);
     const amountBValue = parseUnits(amountB || "0", tokenB.decimals);
     const sorted = sortV4Tokens(tokenA, tokenB);

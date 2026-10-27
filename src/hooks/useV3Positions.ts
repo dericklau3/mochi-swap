@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV3, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount, usePublicClient } from "wagmi";
 import { nonfungiblePositionManagerAbi } from "../lib/abis";
@@ -14,7 +14,7 @@ export function useV3Positions(tokenA?: Token, tokenB?: Token, fee?: number) {
 
   return useQuery({
     queryKey: ["v3-positions", chainId, address, tokenA?.address, tokenB?.address, fee ?? "all"],
-    enabled: supportsV3V4 && Boolean(publicClient && address && tokenA && tokenB && !isSameRouterToken(tokenA, tokenB)),
+    enabled: supportsV3 && Boolean(publicClient && address && tokenA && tokenB && !isSameRouterToken(tokenA, tokenB)),
     staleTime: 12_000,
     queryFn: async (): Promise<V3PositionInfo[]> => {
       if (!publicClient || !address || !tokenA || !tokenB) return [];

@@ -11,7 +11,7 @@ describe("Robinhood application network", () => {
     window.history.replaceState(null, "", "/?network=robinhoodTestnet");
     vi.resetModules();
     const { targetChain } = await import("./chains");
-    const { routerAddress, factoryAddress, v3FactoryAddress } = await import("./contracts");
+    const { routerAddress, factoryAddress, v3FactoryAddress, v4PoolManagerAddress } = await import("./contracts");
     const { defaultTokens } = await import("./tokens");
     const { toRouterTokenAddress, isSameRouterToken } = await import("./routerTokens");
     const { publicClient } = await import("./viem");
@@ -19,7 +19,8 @@ describe("Robinhood application network", () => {
     expect(publicClient.chain.id).toBe(46630);
     expect(routerAddress).toBe("0xdd67C669F804e36F496Eb228a361A465a1DDDAac");
     expect(factoryAddress).toBe("0xa0cec339C549BB10b9720744CdAfb15A21B085A9");
-    expect(v3FactoryAddress).toBe(zeroAddress);
+    expect(v3FactoryAddress).toBe("0x352A92bAc9F383915B48B27237136eCA7Ea6485B");
+    expect(v4PoolManagerAddress).toBe(zeroAddress);
     expect(defaultTokens.map((token) => token.symbol)).toEqual(["ETH", "WETH"]);
     expect(toRouterTokenAddress(defaultTokens[0])).toBe("0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4");
     expect(isSameRouterToken(defaultTokens[0], defaultTokens[1])).toBe(true);
@@ -55,13 +56,16 @@ describe("Robinhood application network", () => {
       .toBe("https://example.com/mochi-swap/?theme=light&network=robinhoodTestnet#/swap");
   });
 
-  it("blocks unsupported V3/V4 deep links on Robinhood", async () => {
+  it("allows V3 and blocks unsupported V4 deep links on Robinhood", async () => {
     window.history.replaceState(null, "", "/?network=robinhoodTestnet");
     vi.resetModules();
     const { getPageFromUrl } = await import("./appRouting");
-    for (const hash of ["#/add/v3", "#/add/v4", "#/add/v4/", "#/add/v3/anything", "#/pair?protocol=V3", "#/remove?protocol=V4"]) {
+    for (const hash of ["#/add/v4", "#/add/v4/", "#/add/v4/anything", "#/pair?protocol=V4", "#/remove?protocol=V4"]) {
       expect(getPageFromUrl({ hash, pathname: "/" })).toBe("not-found");
     }
     expect(getPageFromUrl({ hash: "#/add", pathname: "/" })).toBe("add");
+    expect(getPageFromUrl({ hash: "#/add/v3", pathname: "/" })).toBe("add");
+    expect(getPageFromUrl({ hash: "#/pair?protocol=V3", pathname: "/" })).toBe("pair");
+    expect(getPageFromUrl({ hash: "#/remove?protocol=V3", pathname: "/" })).toBe("remove");
   });
 });

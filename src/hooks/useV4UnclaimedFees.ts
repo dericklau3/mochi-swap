@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV4, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
 import { pad, toHex } from "viem";
 import { usePublicClient } from "wagmi";
@@ -15,7 +15,7 @@ export function useV4UnclaimedFees(position?: V4PositionInfo) {
 
   return useQuery({
     queryKey: ["v4-unclaimed-fees", chainId, poolId, position?.tokenId.toString()],
-    enabled: supportsV3V4 && Boolean(publicClient && poolId && position),
+    enabled: supportsV4 && Boolean(publicClient && poolId && position),
     staleTime: 12_000,
     queryFn: async () => {
       if (!publicClient || !poolId || !position) return undefined;

@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV3, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
 import type { Address } from "viem";
 import { usePublicClient } from "wagmi";
@@ -12,7 +12,7 @@ export function useV3UnclaimedFees(poolAddress?: Address | null, position?: V3Po
 
   return useQuery({
     queryKey: ["v3-unclaimed-fees", chainId, poolAddress, position?.tokenId.toString()],
-    enabled: supportsV3V4 && Boolean(publicClient && poolAddress && position),
+    enabled: supportsV3 && Boolean(publicClient && poolAddress && position),
     staleTime: 12_000,
     queryFn: async () => {
       if (!publicClient || !poolAddress || !position) return undefined;

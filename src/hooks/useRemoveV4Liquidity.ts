@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV4, targetChain } from "../lib/chains";
 import { useState } from "react";
 import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { v4PositionManagerAbi } from "../lib/abis";
@@ -17,7 +17,7 @@ export function useRemoveV4Liquidity(deadlineMinutes = 20) {
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   async function modify(position: V4PositionInfo, percent: number, minimums: { amount0Min: bigint; amount1Min: bigint } = { amount0Min: 0n, amount1Min: 0n }) {
-    if (!supportsV3V4 || !address || !publicClient) return;
+    if (!supportsV4 || !address || !publicClient) return;
     const normalized = Math.min(100, Math.max(0, Math.round(percent)));
     const liquidity = position.liquidity * BigInt(normalized) / 100n;
     const unlockData = encodeV4DecreaseActions({

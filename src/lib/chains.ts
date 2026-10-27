@@ -46,7 +46,8 @@ export const targetNetwork: AppNetwork = typeof window !== "undefined"
   && new URLSearchParams(window.location.search).get("network") === "robinhoodTestnet"
   ? "robinhoodTestnet" : "bscTestnet";
 export const targetChain = appNetworks[targetNetwork];
-export const supportsV3V4 = targetNetwork === "bscTestnet";
+export const supportsV3 = true;
+export const supportsV4 = targetNetwork === "bscTestnet";
 export const supportedChains = [targetChain, bscTestnet.id === targetChain.id ? robinhoodTestnet : bscTestnet, mainnet, bsc, sepolia, polygon, arbitrum, optimism, base] as const;
 
 export function getNetworkUrl(href: string, network: AppNetwork) {

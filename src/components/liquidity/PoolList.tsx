@@ -1,4 +1,4 @@
-import { supportsV3V4 } from "../../lib/chains";
+import { supportsV4 } from "../../lib/chains";
 import type { Token } from "../../types/token";
 import type { TrackedPoolPosition } from "../../types/token";
 import { Card } from "../ui/Card";
@@ -12,7 +12,7 @@ export function PoolList({ positions, onCreate, onImport, onTrack, onOpen }: { p
       <div className="card-head">
         <div>
           <h2 className="card-title">Pool</h2>
-          <p className="card-subtitle">{supportsV3V4 ? "Manage V2, V3, and V4 liquidity positions." : "Manage V2 liquidity positions."}</p>
+          <p className="card-subtitle">{supportsV4 ? "Manage V2, V3, and V4 liquidity positions." : "Manage V2 and V3 liquidity positions."}</p>
         </div>
         <div className="pool-actions">
           <Button variant="primary" onClick={onCreate}>Create position</Button>

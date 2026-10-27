@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV4, targetChain } from "../lib/chains";
 import { useMemo } from "react";
 import { maxUint48, maxUint160, type Address } from "viem";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
@@ -14,7 +14,7 @@ export function useApprovePermit2(token?: Address, spender?: Address) {
 
   return useMemo(() => ({
     approve: () => {
-      if (!supportsV3V4 || !token || !spender) return;
+      if (!supportsV4 || !token || !spender) return;
       write.writeContract({
         chainId: targetChain.id,
         address: permit2Address,

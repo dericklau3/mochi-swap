@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV3, supportsV4, targetChain } from "../lib/chains";
 import { encodeFunctionData, parseUnits, type Hex } from "viem";
 import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { quoterV2Abi, swapRouterV3Abi, universalRouterAbi, uniswapV2RouterAbi, v4QuoterAbi } from "../lib/abis";
@@ -33,7 +33,7 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
         functionName: "getAmountsOut",
         args: [amountIn, path]
       }).then((amounts): SwapRouteQuote => ({ protocol: "V2", amountOut: amounts[amounts.length - 1] })).catch((): SwapRouteQuote => ({ protocol: "V2" })),
-      ...(supportsV3V4 ? v3FeeOptions : []).map((option) => publicClient.readContract({
+      ...(supportsV3 ? v3FeeOptions : []).map((option) => publicClient.readContract({
         address: v3QuoterAddress,
         abi: quoterV2Abi,
         functionName: "quoteExactInputSingle",
@@ -48,7 +48,7 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
     ];
     const quotes: SwapRouteQuote[] = await Promise.all([
       ...legacyQuotes,
-      ...(supportsV3V4 ? v4Candidates : []).map((poolKey) => {
+      ...(supportsV4 ? v4Candidates : []).map((poolKey) => {
         const inputCurrency = toV4Currency(from);
         const outputCurrency = toV4Currency(to);
         const zeroForOne = inputCurrency.toLowerCase() === poolKey.currency0.toLowerCase()
@@ -71,7 +71,7 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
   }
 
   function swap(amount: string, quote: BestSwapQuote, v4Permit?: V4SwapPermit) {
-    if (!address || !from || !to || (!supportsV3V4 && quote.protocol !== "V2")) return;
+    if (!address || !from || !to || (quote.protocol === "V3" && !supportsV3) || (quote.protocol === "V4" && !supportsV4)) return;
     if (quote.protocol !== "V4" && isSameRouterToken(from, to)) return;
     const amountIn = parseUnits(amount || "0", from.decimals);
     const minOut = applySlippage(quote.amountOut, slippageBps);

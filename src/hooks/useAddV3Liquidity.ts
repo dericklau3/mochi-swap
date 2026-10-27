@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV3, targetChain } from "../lib/chains";
 import { encodeFunctionData, parseUnits } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { nonfungiblePositionManagerAbi } from "../lib/abis";
@@ -41,7 +41,7 @@ export function useAddV3Liquidity({
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   function addLiquidity(amountA: string, amountB: string) {
-    if (!supportsV3V4 || !address || !tokenA || !tokenB) return;
+    if (!supportsV3 || !address || !tokenA || !tokenB) return;
     const desiredA = parseUnits(amountA || "0", tokenA.decimals);
     const desiredB = parseUnits(amountB || "0", tokenB.decimals);
     if (desiredA <= 0n && desiredB <= 0n) return;

@@ -1,5 +1,5 @@
 import { zeroAddress, type Address } from "viem";
-import { supportsV3V4, targetNetwork } from "./chains";
+import { supportsV4, targetNetwork } from "./chains";
 
 export const CONTRACTS = {
   robinhoodTestnet: {
@@ -7,6 +7,81 @@ export const CONTRACTS = {
     uniswapV2Factory: {
       address: "0xa0cec339C549BB10b9720744CdAfb15A21B085A9" as Address,
       args: { feeToSetter: "0xD524a42103c81abEe242870058F4A28b192d5720" as Address }
+    },
+    uniswapV3Factory: {
+      address: "0x352A92bAc9F383915B48B27237136eCA7Ea6485B" as Address
+    },
+    uniswapInterfaceMulticall: {
+      address: "0xaA771b92264Df81560d9E71b5411feB51748222a" as Address
+    },
+    proxyAdmin: {
+      address: "0x61d143c4c20b61E246a33e267434C2c44c1bf0D8" as Address
+    },
+    tickLens: {
+      address: "0xEb8C226F18022E52DFaCBa14BdaCBe2d8Cf0c0b6" as Address
+    },
+    nftDescriptor: {
+      address: "0x9d1E307330a734a4411ddAd1a99d73029b5D6dC8" as Address
+    },
+    nonfungibleTokenPositionDescriptorImpl: {
+      address: "0x756e7db9D51553E8f7994157d58e0077C4f488A1" as Address,
+      args: {
+        weth: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address
+      }
+    },
+    nonfungibleTokenPositionDescriptor: {
+      address: "0xC2C699671125FAF4F0497132003661E292d8dD81" as Address,
+      args: {
+        logic: "0x756e7db9D51553E8f7994157d58e0077C4f488A1" as Address,
+        admin: "0x61d143c4c20b61E246a33e267434C2c44c1bf0D8" as Address,
+        data: "0x"
+      }
+    },
+    nonfungiblePositionManager: {
+      address: "0xEf922Cf3C8430A52Ad30B84fF464BC51906A89Fe" as Address,
+      args: {
+        factory: "0x352A92bAc9F383915B48B27237136eCA7Ea6485B" as Address,
+        weth: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address,
+        tokenDescriptor: "0xC2C699671125FAF4F0497132003661E292d8dD81" as Address
+      }
+    },
+    v3Migrator: {
+      address: "0xfE4c99119256E64B084D57c8120bD5c8AB2f486F" as Address,
+      args: {
+        factory: "0x352A92bAc9F383915B48B27237136eCA7Ea6485B" as Address,
+        weth: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address,
+        nonfungiblePositionManager: "0xEf922Cf3C8430A52Ad30B84fF464BC51906A89Fe" as Address
+      }
+    },
+    quoter: {
+      address: "0xcC325CdDCBe0434Ba064D84bCe71816C83AC1B20" as Address,
+      args: {
+        factory: "0x352A92bAc9F383915B48B27237136eCA7Ea6485B" as Address,
+        weth: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address
+      }
+    },
+    quoterV2: {
+      address: "0xe2eDbCdD87cd52b33a41d67434F6D6a6b3075291" as Address,
+      args: {
+        factory: "0x352A92bAc9F383915B48B27237136eCA7Ea6485B" as Address,
+        weth: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address
+      }
+    },
+    swapRouter: {
+      address: "0xc98A0311Ba733fBd2f4b21397df598f9e5a814fc" as Address,
+      args: {
+        factory: "0x352A92bAc9F383915B48B27237136eCA7Ea6485B" as Address,
+        weth: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address
+      }
+    },
+    swapRouter02: {
+      address: "0x1Ba7A342477130d7C35CACC42879772ED6afC0A0" as Address,
+      args: {
+        factory: "0x352A92bAc9F383915B48B27237136eCA7Ea6485B" as Address,
+        weth: "0xFea12dfD7FA27BFf872AEA477f728099B1c71Bd4" as Address,
+        v2Factory: "0xa0cec339C549BB10b9720744CdAfb15A21B085A9" as Address,
+        positionManager: "0xEf922Cf3C8430A52Ad30B84fF464BC51906A89Fe" as Address
+      }
     },
     uniswapV2Router: {
       address: "0xdd67C669F804e36F496Eb228a361A465a1DDDAac" as Address,
@@ -79,13 +154,13 @@ export const activeContracts = CONTRACTS[targetNetwork];
 
 export const routerAddress = activeContracts.uniswapV2Router.address;
 export const factoryAddress = activeContracts.uniswapV2Factory.address;
-export const v3FactoryAddress = supportsV3V4 ? CONTRACTS.bscTestnet.uniswapV3Factory.address : zeroAddress;
-export const v3PositionManagerAddress = supportsV3V4 ? CONTRACTS.bscTestnet.nonfungiblePositionManager.address : zeroAddress;
-export const v3QuoterAddress = supportsV3V4 ? CONTRACTS.bscTestnet.quoterV2.address : zeroAddress;
-export const v3SwapRouterAddress = supportsV3V4 ? CONTRACTS.bscTestnet.swapRouter.address : zeroAddress;
-export const permit2Address = supportsV3V4 ? CONTRACTS.bscTestnet.permit2.address : zeroAddress;
-export const v4PoolManagerAddress = supportsV3V4 ? CONTRACTS.bscTestnet.v4PoolManager.address : zeroAddress;
-export const v4PositionManagerAddress = supportsV3V4 ? CONTRACTS.bscTestnet.v4PositionManager.address : zeroAddress;
-export const v4StateViewAddress = supportsV3V4 ? CONTRACTS.bscTestnet.v4StateView.address : zeroAddress;
-export const v4QuoterAddress = supportsV3V4 ? CONTRACTS.bscTestnet.v4Quoter.address : zeroAddress;
-export const universalRouterAddress = supportsV3V4 ? CONTRACTS.bscTestnet.universalRouter.address : zeroAddress;
+export const v3FactoryAddress = activeContracts.uniswapV3Factory.address;
+export const v3PositionManagerAddress = activeContracts.nonfungiblePositionManager.address;
+export const v3QuoterAddress = activeContracts.quoterV2.address;
+export const v3SwapRouterAddress = activeContracts.swapRouter.address;
+export const permit2Address = supportsV4 ? CONTRACTS.bscTestnet.permit2.address : zeroAddress;
+export const v4PoolManagerAddress = supportsV4 ? CONTRACTS.bscTestnet.v4PoolManager.address : zeroAddress;
+export const v4PositionManagerAddress = supportsV4 ? CONTRACTS.bscTestnet.v4PositionManager.address : zeroAddress;
+export const v4StateViewAddress = supportsV4 ? CONTRACTS.bscTestnet.v4StateView.address : zeroAddress;
+export const v4QuoterAddress = supportsV4 ? CONTRACTS.bscTestnet.v4Quoter.address : zeroAddress;
+export const universalRouterAddress = supportsV4 ? CONTRACTS.bscTestnet.universalRouter.address : zeroAddress;

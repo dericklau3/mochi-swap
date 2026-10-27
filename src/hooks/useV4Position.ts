@@ -1,4 +1,4 @@
-import { supportsV3V4, targetChain } from "../lib/chains";
+import { supportsV4, targetChain } from "../lib/chains";
 import { useQuery } from "@tanstack/react-query";
 import { usePublicClient } from "wagmi";
 import { v4PositionManagerAbi } from "../lib/abis";
@@ -12,7 +12,7 @@ export function useV4Position(tokenId?: bigint) {
 
   return useQuery({
     queryKey: ["v4-position", chainId, tokenId?.toString()],
-    enabled: supportsV3V4 && Boolean(publicClient && tokenId !== undefined),
+    enabled: supportsV4 && Boolean(publicClient && tokenId !== undefined),
     staleTime: 12_000,
     queryFn: async (): Promise<V4PositionInfo | undefined> => {
       if (!publicClient || tokenId === undefined) return undefined;
