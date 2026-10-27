@@ -115,3 +115,16 @@ V3 报价使用 `quoterV2`，交易使用 `swapRouter`（含 deadline 的现有 
 | `v4StateView` | [0x25c413Edc80F97dce81479fF4DAC67940095CcB5](https://testnet.bscscan.com/address/0x25c413Edc80F97dce81479fF4DAC67940095CcB5) |
 | `v4Quoter` | [0xbE46d4cA46aC3217e5547fB93b9B50Daf92bC213](https://testnet.bscscan.com/address/0xbE46d4cA46aC3217e5547fB93b9B50Daf92bC213) |
 | `universalRouter` | [0x5EEA3b6053f56C0f1D48F7215D26c3c0ab6C67b1](https://testnet.bscscan.com/address/0x5EEA3b6053f56C0f1D48F7215D26c3c0ab6C67b1) |
+
+## GitHub Pages 发布
+
+仓库 **Settings → Pages → Build and deployment → Source** 必须选择 **GitHub Actions**。不要同时从 `main` 分支直接发布：这会启动内置的 `pages-build-deployment`，把源码 `index.html` 发布到线上，与本项目发布 `dist` 的工作流互相覆盖，导致刷新白屏。
+
+推送 `main` 后，由 `.github/workflows/pages.yml` 完成测试、Vite 构建、产物校验及部署。线上 HTML 应引用 `/mochi-swap/assets/*.js`，不能引用 `/src/main.tsx`。发布来源配置错误、引用源码、资源路径错误或入口资源缺失时，工作流会停止并报错。
+
+本地验证 Pages 构建：
+
+```sh
+GITHUB_PAGES=true npm run build
+node scripts/verify-pages.mjs dist
+```
