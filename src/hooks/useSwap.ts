@@ -143,12 +143,13 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
       });
       return;
     }
+    // Router02 supports taxed transfers while enforcing the user's minimum output.
     if (from.isNative) {
       write.writeContract({
         chainId: targetChain.id,
         address: routerAddress,
         abi: uniswapV2RouterAbi,
-        functionName: "swapExactETHForTokens",
+        functionName: "swapExactETHForTokensSupportingFeeOnTransferTokens",
         args: [minOut, path, address, deadline],
         value: amountIn
       });
@@ -159,7 +160,7 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
         chainId: targetChain.id,
         address: routerAddress,
         abi: uniswapV2RouterAbi,
-        functionName: "swapExactTokensForETH",
+        functionName: "swapExactTokensForETHSupportingFeeOnTransferTokens",
         args: [amountIn, minOut, path, address, deadline]
       });
       return;
@@ -168,7 +169,7 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
       chainId: targetChain.id,
       address: routerAddress,
       abi: uniswapV2RouterAbi,
-      functionName: "swapExactTokensForTokens",
+      functionName: "swapExactTokensForTokensSupportingFeeOnTransferTokens",
       args: [amountIn, minOut, path, address, deadline]
     });
   }

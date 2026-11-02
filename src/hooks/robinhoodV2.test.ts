@@ -43,8 +43,35 @@ describe("Robinhood V2/V3 transaction boundaries", () => {
     expect(readContract).toHaveBeenCalledWith(expect.objectContaining({ address: router, functionName: "getAmountsOut", args: [parseEther("1"), [weth, token.address]] }));
     expect(usePublicClient).toHaveBeenCalledWith({ chainId: 46630 });
     act(() => result.current.swap("1", quote!));
-    expect(writeContract).toHaveBeenCalledWith(expect.objectContaining({ chainId: 46630, address: router, functionName: "swapExactETHForTokens", value: parseEther("1") }));
+    expect(writeContract).toHaveBeenCalledWith(expect.objectContaining({ chainId: 46630, address: router, functionName: "swapExactETHForTokensSupportingFeeOnTransferTokens", value: parseEther("1") }));
     expect(useWaitForTransactionReceipt).toHaveBeenCalledWith(expect.objectContaining({ chainId: 46630 }));
+  });
+
+  it.each([
+    { from: eth, to: token, functionName: "swapExactETHForTokensSupportingFeeOnTransferTokens", path: [weth, token.address], nativeInput: true },
+    { from: token, to: eth, functionName: "swapExactTokensForETHSupportingFeeOnTransferTokens", path: [token.address, weth], nativeInput: false },
+    { from: token, to: { ...token, address: "0x0000000000000000000000000000000000000002" } as Token, functionName: "swapExactTokensForTokensSupportingFeeOnTransferTokens", path: [token.address, "0x0000000000000000000000000000000000000002"], nativeInput: false }
+  ])("uses $functionName with the user's minimum output and deadline", async ({ from, to, functionName, path, nativeInput }) => {
+    const { useSwap } = await import("./useSwap");
+    const { encodeFunctionData } = await import("viem");
+    const { result } = renderHook(() => useSwap(from, to, 1000, 7));
+    const now = vi.spyOn(Date, "now").mockReturnValue(1_800_000_000_000);
+    try {
+      act(() => result.current.swap("1", { protocol: "V2", amountOut: parseEther("2") }));
+    } finally {
+      now.mockRestore();
+    }
+    const args = nativeInput
+      ? [parseEther("1.8"), path, "0x00000000000000000000000000000000000000aa", 1_800_000_420n]
+      : [parseEther("1"), parseEther("1.8"), path, "0x00000000000000000000000000000000000000aa", 1_800_000_420n];
+    expect(writeContract).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ chainId: 46630, address: router, functionName, args }));
+    const request = writeContract.mock.calls[0][0];
+    expect(request.value).toBe(nativeInput ? parseEther("1") : undefined);
+    // Exercise the ABI used by the wallet, including the payable ETH variant.
+    expect(() => encodeFunctionData(request)).not.toThrow();
+    expect(request.abi.find((entry: { name?: string }) => entry.name === functionName)).toMatchObject({
+      stateMutability: nativeInput ? "payable" : "nonpayable", outputs: []
+    });
   });
 
   it("selects a better V3 quote and uses the Robinhood V3 router for ETH input", async () => {
