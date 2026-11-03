@@ -19,8 +19,8 @@ function normalizePercent(value: string) {
 export function SwapSettings({ slippage, setSlippage, deadline, setDeadline, onClose }: { slippage: string; setSlippage: (value: string) => void; deadline: string; setDeadline: (value: string) => void; onClose: () => void }) {
   const [draftSlippage, setDraftSlippage] = useState(slippage);
   const [draftDeadline, setDraftDeadline] = useState(deadline);
+  const [activePreset, setActivePreset] = useState(() => SLIPPAGE_PRESETS.find((preset) => Number(preset) === Number(slippage)));
 
-  const activePreset = SLIPPAGE_PRESETS.find((preset) => Number(preset) === Number(draftSlippage));
   const normalizedSlippage = normalizePercent(draftSlippage);
   const canSave = normalizedSlippage !== "";
 
@@ -42,7 +42,10 @@ export function SwapSettings({ slippage, setSlippage, deadline, setDeadline, onC
                 key={preset}
                 type="button"
                 className={cn("slippage-preset", activePreset === preset && "is-active")}
-                onClick={() => setDraftSlippage(preset)}
+                onClick={() => {
+                  setActivePreset(preset);
+                  setDraftSlippage(preset);
+                }}
               >
                 {preset}%
               </button>
@@ -52,7 +55,10 @@ export function SwapSettings({ slippage, setSlippage, deadline, setDeadline, onC
                 value={activePreset ? "" : draftSlippage}
                 inputMode="decimal"
                 placeholder="Custom"
-                onChange={(event) => setDraftSlippage(toSafeAmount(event.target.value))}
+                onChange={(event) => {
+                  setActivePreset(undefined);
+                  setDraftSlippage(toSafeAmount(event.target.value));
+                }}
               />
               <span>%</span>
             </label>
