@@ -147,7 +147,8 @@ describe("SwapForm network guard", () => {
     const view = renderSwapForm();
     await screen.findByRole("button", { name: "Approve AAA" });
     view.rerender(buildSwapForm("2"));
-    expect(screen.getByRole("button", { name: "Swap" })).toBeDisabled();
+    // Approval is still the CTA because its allowance is zero, but it must stay disabled.
+    expect(screen.getByRole("button", { name: "Approve AAA" })).toBeDisabled();
     expect(swapCall).not.toHaveBeenCalled();
   });
 
