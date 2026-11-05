@@ -141,7 +141,9 @@ describe("SwapForm network guard", () => {
   });
 
   it("disables submitting a stale quote when the input amount changes", async () => {
-    quote.mockResolvedValue({ protocol: "V2", amountOut: 2n * 10n ** 18n });
+    quote.mockResolvedValueOnce({ protocol: "V2", amountOut: 2n * 10n ** 18n });
+    // Leave the next amount pending so the old quotation cannot be reused.
+    quote.mockImplementationOnce(() => new Promise(() => {}));
     const view = renderSwapForm();
     await screen.findByRole("button", { name: "Approve AAA" });
     view.rerender(buildSwapForm("2"));
