@@ -42,6 +42,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
   const permitSignature = useSignTypedData();
   const slippageBps = Math.round(Number(slippage) * 100);
   const swap = useSwap(from, to, slippageBps, Number(deadline), v4Candidates);
+  const getQuote = swap.quote;
   const [quoted, setQuoted] = useState<{ amount: string; from: string; to: string; result?: BestSwapQuote }>();
   const quote = quoted?.amount === amount && quoted.from === from.address && quoted.to === to.address
     ? quoted.result : undefined;
@@ -87,7 +88,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
     setQuoteError("");
     setQuoted(undefined);
     if (!debouncedAmount) return;
-    swap.quote(debouncedAmount).then((next) => {
+    getQuote(debouncedAmount).then((next) => {
       if (!cancelled) setQuoted({ amount: debouncedAmount, from: from.address, to: to.address, result: next });
     }).catch((error: unknown) => {
       if (!cancelled) setQuoteError(getReadableError(error));
@@ -95,7 +96,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
     return () => {
       cancelled = true;
     };
-  }, [debouncedAmount, from.address, to.address, swap.quote]);
+  }, [debouncedAmount, from.address, to.address, getQuote]);
 
   const amountIn = useMemo(() => {
     try {
