@@ -1,4 +1,5 @@
 import { supportsV3, supportsV4, targetChain } from "../lib/chains";
+import { useCallback } from "react";
 import { encodeFunctionData, parseUnits, type Hex } from "viem";
 import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { quoterV2Abi, swapRouterV3Abi, universalRouterAbi, uniswapV2RouterAbi, v4QuoterAbi } from "../lib/abis";
@@ -21,10 +22,11 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
   const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
-  async function quote(amount: string) {
+  const quote = useCallback(async (amount: string) => {
     if (!publicClient || !from || !to || !amount) return undefined;
     const sameLegacyToken = isSameRouterToken(from, to);
     const amountIn = parseUnits(amount, from.decimals);
+    if (amountIn <= 0n) return undefined;
     const path = toRouterPath(from, to);
     const legacyQuotes: Array<Promise<SwapRouteQuote>> = sameLegacyToken ? [] : [
       publicClient.readContract({
@@ -68,12 +70,15 @@ export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinu
       })
     ]);
     return chooseBestSwapRoute(quotes) as BestSwapQuote | undefined;
-  }
+  }, [publicClient, from, to, v4Candidates]);
 
   function swap(amount: string, quote: BestSwapQuote, v4Permit?: V4SwapPermit) {
     if (!address || !from || !to || (quote.protocol === "V3" && !supportsV3) || (quote.protocol === "V4" && !supportsV4)) return;
     if (quote.protocol !== "V4" && isSameRouterToken(from, to)) return;
+    if (!Number.isInteger(slippageBps) || slippageBps < 0 || slippageBps > 2_000
+      || !Number.isInteger(deadlineMinutes) || deadlineMinutes < 1 || deadlineMinutes > 60) return;
     const amountIn = parseUnits(amount || "0", from.decimals);
+    if (amountIn <= 0n || quote.amountOut <= 0n) return;
     const minOut = applySlippage(quote.amountOut, slippageBps);
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineMinutes * 60);
     const path = toRouterPath(from, to);
