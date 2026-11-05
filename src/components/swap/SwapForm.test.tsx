@@ -94,12 +94,12 @@ const tokenB: Token = {
   decimals: 18
 };
 
-function renderSwapForm() {
-  render(
+function buildSwapForm(amount = "1") {
+  return (
     <SwapForm
       from={tokenA}
       to={tokenB}
-      amount="1"
+      amount={amount}
       slippage="0.5"
       deadline="20"
       v4Candidates={[]}
@@ -110,6 +110,10 @@ function renderSwapForm() {
       onSettings={vi.fn()}
     />
   );
+}
+
+function renderSwapForm() {
+  return render(buildSwapForm());
 }
 
 afterEach(() => {
@@ -133,6 +137,15 @@ describe("SwapForm network guard", () => {
     fireEvent.click(button);
 
     expect(approveV2).not.toHaveBeenCalled();
+    expect(swapCall).not.toHaveBeenCalled();
+  });
+
+  it("disables submitting a stale quote when the input amount changes", async () => {
+    quote.mockResolvedValue({ protocol: "V2", amountOut: 2n * 10n ** 18n });
+    const view = renderSwapForm();
+    await screen.findByRole("button", { name: "Approve AAA" });
+    view.rerender(buildSwapForm("2"));
+    expect(screen.getByRole("button", { name: "Swap" })).toBeDisabled();
     expect(swapCall).not.toHaveBeenCalled();
   });
 
