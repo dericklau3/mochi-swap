@@ -13,18 +13,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+      - name: Set up Node.js 26.13.0
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Verify Node.js version
+        run: node --version && npm --version
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
       - name: Install locked dependencies
         run: bun install --frozen-lockfile
       - name: Type check
-        run: bun run typecheck
+        run: npm run typecheck
       - name: Lint
-        run: bun run lint
+        run: npm run lint
       - name: Unit tests
-        run: bun run test
+        run: npm run test
       - name: Build
-        run: bun run build
+        run: npm run build
       - name: Audit high and critical dependency vulnerabilities
         run: bun audit --audit-level=high

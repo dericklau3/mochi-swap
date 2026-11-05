@@ -1,0 +1,37 @@
+name: Temporary regenerate dependency lockfile
+
+on:
+  push:
+    branches: [security/harden-swap-permit2-20261105]
+
+permissions:
+  contents: write
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Resolve dependency overrides
+        run: bun install
+      - name: Audit resolved dependencies
+        run: bun audit --audit-level=high
+      - name: Commit lockfile changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- bun.lock; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bun.lock
+          git commit -m "chore(deps): resolve patched Zod v4 transitive version"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:security/harden-swap-permit2-20261105

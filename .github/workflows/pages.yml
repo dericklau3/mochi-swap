@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Publishing the main branch directly deploys source index.html and races
       # this workflow. The repository Pages source must be GitHub Actions.
@@ -42,10 +42,10 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Test
-        run: bun run test
+        run: npm run test
 
       - name: Build
-        run: bun run build
+        run: npm run build
         env:
           GITHUB_PAGES: "true"
           VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID || vars.VITE_WALLETCONNECT_PROJECT_ID }}
