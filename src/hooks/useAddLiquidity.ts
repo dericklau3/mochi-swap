@@ -4,6 +4,7 @@ import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagm
 import { uniswapV2RouterAbi } from "../lib/abis";
 import { routerAddress } from "../lib/contracts";
 import { getReadableError } from "../lib/errors";
+import { applySlippage } from "../lib/v3Routing";
 import { isSameRouterToken, toRouterTokenAddress } from "../lib/routerTokens";
 import type { Token } from "../types/token";
 import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
@@ -19,8 +20,9 @@ export function useAddLiquidity(tokenA?: Token, tokenB?: Token, slippageBps = 50
     if (isSameRouterToken(tokenA, tokenB)) return;
     const desiredA = parseUnits(amountA || "0", tokenA.decimals);
     const desiredB = parseUnits(amountB || "0", tokenB.decimals);
-    const minA = desiredA - (desiredA * BigInt(slippageBps)) / 10_000n;
-    const minB = desiredB - (desiredB * BigInt(slippageBps)) / 10_000n;
+    if (desiredA <= 0n || desiredB <= 0n) return;
+    const minA = applySlippage(desiredA, slippageBps);
+    const minB = applySlippage(desiredB, slippageBps);
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineMinutes * 60);
     if (tokenA.isNative || tokenB.isNative) {
       const erc20Token = tokenA.isNative ? tokenB : tokenA;

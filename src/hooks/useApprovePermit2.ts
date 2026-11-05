@@ -1,6 +1,6 @@
 import { supportsV4, targetChain } from "../lib/chains";
 import { useMemo } from "react";
-import { maxUint48, maxUint160, type Address } from "viem";
+import { maxUint160, type Address } from "viem";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { permit2Abi } from "../lib/abis";
 import { permit2Address } from "../lib/contracts";
@@ -13,14 +13,14 @@ export function useApprovePermit2(token?: Address, spender?: Address) {
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 
   return useMemo(() => ({
-    approve: () => {
-      if (!supportsV4 || !token || !spender) return;
+    approve: (amount: bigint) => {
+      if (!supportsV4 || !token || !spender || amount <= 0n || amount > maxUint160) return;
       write.writeContract({
         chainId: targetChain.id,
         address: permit2Address,
         abi: permit2Abi,
         functionName: "approve",
-        args: [token, spender, maxUint160, Number(maxUint48)]
+        args: [token, spender, amount, Math.floor(Date.now() / 1000) + 60 * 60]
       });
     },
     hash: write.data,

@@ -162,7 +162,11 @@ export function getV3PoolPriceValue({
 }
 
 export function applySlippage(amount: bigint, slippageBps: number) {
-  return amount - (amount * BigInt(Math.max(0, Math.round(slippageBps)))) / 10_000n;
+  const bps = Math.round(slippageBps);
+  if (!Number.isSafeInteger(bps) || bps < 0 || bps > 2_000) {
+    throw new RangeError("Slippage must be between 0 and 20%");
+  }
+  return amount - (amount * BigInt(bps)) / 10_000n;
 }
 
 export function getSqrtRatioAtTick(tick: number) {

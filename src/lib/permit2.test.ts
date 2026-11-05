@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeAbiParameters, encodeFunctionData, maxUint160, parseAbiParameters } from "viem";
+import { decodeAbiParameters, encodeFunctionData, parseAbiParameters } from "viem";
 import { v4PositionManagerAbi } from "./abis";
 import { permit2Address, universalRouterAddress, v4PositionManagerAddress } from "./contracts";
 import {
@@ -70,7 +70,7 @@ describe("Permit2 authorization", () => {
 
     expect(batch.details).toEqual([{
       token: "0x0000000000000000000000000000000000000001",
-      amount: maxUint160,
+      amount: 100n,
       expiration: 1000,
       nonce: 3
     }]);
@@ -93,6 +93,7 @@ describe("Permit2 authorization", () => {
   it("builds and encodes a PermitSingle signature for the Universal Router", () => {
     const permit = buildPermit2Single({
       token: "0x0000000000000000000000000000000000000001",
+      amount: 100n,
       spender: universalRouterAddress,
       expiration: 1000,
       nonce: 3,
@@ -109,7 +110,7 @@ describe("Permit2 authorization", () => {
     expect(permit).toEqual({
       details: {
         token: "0x0000000000000000000000000000000000000001",
-        amount: maxUint160,
+        amount: 100n,
         expiration: 1000,
         nonce: 3
       },
@@ -123,5 +124,16 @@ describe("Permit2 authorization", () => {
     });
     expect(decodedPermit).toEqual(permit);
     expect(decodedSignature).toBe(signature);
+  });
+
+  it("rejects an oversized Permit2 signature allowance", () => {
+    expect(() => buildPermit2Single({
+      token: "0x0000000000000000000000000000000000000001",
+      amount: 1n << 160n,
+      spender: universalRouterAddress,
+      expiration: 1000,
+      nonce: 0,
+      sigDeadline: 900n
+    })).toThrow(RangeError);
   });
 });
