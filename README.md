@@ -6,7 +6,7 @@
 - Bun 用于锁定依赖（`bun.lock` 和 `bun install --frozen-lockfile`）；**应用开发、测试和构建进程运行在 Node.js 26**。
 - 本地安装：`nvm install && nvm use`，然后安装 Bun 1.4.4，运行 `bun install --frozen-lockfile`。
 - 常用命令：`npm run dev`、`npm run typecheck`、`npm run lint`、`npm test`、`npm run build`。
-- 安全检查：`bun audit --audit-level=high`；任何依赖覆盖升级后都需要通过完整 CI 并在浏览器中检查 WalletConnect 实际连接、签名、Swap。
+- 安全检查：`bun audit --audit-level=low`；任何依赖覆盖升级后都需要通过完整 CI 并在浏览器中检查 WalletConnect 实际连接、签名、Swap。
 
 
 ## 网络使用
