@@ -10,23 +10,25 @@ const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || walletConnect
 const walletConnectStorageMigrationKey = "mochi-swap:walletconnect-storage-v2";
 
 function clearLegacyWalletConnectStorage() {
-  if (typeof window === "undefined") {
-    return;
-  }
+  if (typeof window === "undefined") return;
 
-  const { localStorage } = window;
-  if (localStorage.getItem(walletConnectStorageMigrationKey) === projectId) {
-    return;
-  }
+  // Storage may be disabled by browser privacy policies, embedded webviews,
+  // or test environments. Never block wallet initialization in this case.
+  try {
+    const storage = window.localStorage;
+    if (!storage || storage.getItem(walletConnectStorageMigrationKey) === projectId) return;
 
-  const staleKeyFragments = ["wc@", "walletconnect", "WalletConnect", "w3m", "W3M", "reown", "wagmi.recentConnectorId"];
-  for (const key of Object.keys(localStorage)) {
-    if (staleKeyFragments.some((fragment) => key.includes(fragment))) {
-      localStorage.removeItem(key);
+    const staleKeyFragments = ["wc@", "walletconnect", "WalletConnect", "w3m", "W3M", "reown", "wagmi.recentConnectorId"];
+    for (let index = storage.length - 1; index >= 0; index -= 1) {
+      const key = storage.key(index);
+      if (key && staleKeyFragments.some((fragment) => key.includes(fragment))) {
+        storage.removeItem(key);
+      }
     }
+    storage.setItem(walletConnectStorageMigrationKey, projectId);
+  } catch {
+    // If the browser rejects storage operations, continue without migration.
   }
-
-  localStorage.setItem(walletConnectStorageMigrationKey, projectId);
 }
 
 clearLegacyWalletConnectStorage();
