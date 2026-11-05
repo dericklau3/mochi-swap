@@ -61,12 +61,15 @@ export function buildPermit2Batch({
   expiration: number;
   sigDeadline: bigint;
 }): Permit2PermitBatch {
+  if (permits.some((permit) => permit.amount < 0n || permit.amount > maxUint160)) {
+    throw new RangeError("Permit2 amount exceeds uint160");
+  }
   return {
     details: permits
       .filter((permit) => permit.amount > 0n)
       .map((permit) => ({
         token: permit.token,
-        amount: maxUint160,
+        amount: permit.amount,
         expiration,
         nonce: permit.nonce
       })),
@@ -77,21 +80,26 @@ export function buildPermit2Batch({
 
 export function buildPermit2Single({
   token,
+  amount,
   spender,
   expiration,
   nonce,
   sigDeadline
 }: {
   token: Address;
+  amount: bigint;
   spender: Address;
   expiration: number;
   nonce: number;
   sigDeadline: bigint;
 }): Permit2PermitSingle {
+  if (amount <= 0n || amount > maxUint160) {
+    throw new RangeError("Permit2 amount must be positive and fit uint160");
+  }
   return {
     details: {
       token,
-      amount: maxUint160,
+      amount,
       expiration,
       nonce
     },

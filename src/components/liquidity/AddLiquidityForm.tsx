@@ -319,8 +319,9 @@ export function AddLiquidityForm({
   const v4Disabled = !isConnected || !isCorrectChain || v4PermitLoading || !v4PositionReady || !v4InitialPriceReady || !v4RangeReady || !v4HasAmount || insufficient;
 
   async function submitV4Liquidity() {
-    if (v4StepA === "TOKEN_TO_PERMIT2") return approveA.approve();
-    if (v4StepB === "TOKEN_TO_PERMIT2") return approveB.approve();
+    if (!isConnected || !isCorrectChain || v4Disabled) return;
+    if (v4StepA === "TOKEN_TO_PERMIT2") return approveA.approve(parsed.a);
+    if (v4StepB === "TOKEN_TO_PERMIT2") return approveB.approve(parsed.b);
     if (!v4NeedsSignature) return addV4.addLiquidity(amountA, amountB);
     const nowSeconds = Math.floor(Date.now() / 1000);
     const sigDeadline = BigInt(nowSeconds + Number(deadline) * 60);
@@ -330,7 +331,7 @@ export function AddLiquidityForm({
         ...(v4StepB === "PERMIT2_TO_SPENDER" ? [{ token: tokenB.address, amount: parsed.b, nonce: permitB.data?.nonce ?? 0 }] : [])
       ],
       spender: v4PositionManagerAddress,
-      expiration: nowSeconds + 30 * 24 * 60 * 60,
+      expiration: nowSeconds + 60 * 60,
       sigDeadline
     });
     const signature = await permitSignature.signTypedDataAsync(getPermit2TypedData(chainId, batch));

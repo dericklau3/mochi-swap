@@ -44,6 +44,21 @@ describe("SwapSettings custom slippage", () => {
     expect(setSlippage).toHaveBeenCalledWith("0.1");
   });
 
+  it("rejects excessive slippage beyond 20%", () => {
+    renderSettings();
+    fireEvent.change(screen.getByPlaceholderText("Custom"), { target: { value: "99" } });
+    expect(screen.getByRole("button", { name: "Save settings" })).toBeDisabled();
+  });
+
+  it("rejects missing or invalid transaction deadlines", () => {
+    renderSettings();
+    const deadline = screen.getByDisplayValue("20");
+    for (const value of ["0", "-1", "1.5", "61"]) {
+      fireEvent.change(deadline, { target: { value } });
+      expect(screen.getByRole("button", { name: "Save settings" })).toBeDisabled();
+    }
+  });
+
   it("does not save an empty custom value", () => {
     renderSettings("12");
     fireEvent.change(screen.getByPlaceholderText("Custom"), { target: { value: "" } });

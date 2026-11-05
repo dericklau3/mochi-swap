@@ -1,6 +1,6 @@
 import { targetChain } from "../../lib/chains";
 import { ArrowDownUp, Settings } from "lucide-react";
-import { parseUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import type { Token, V4PoolKey } from "../../types/token";
 import { permit2Address, routerAddress, universalRouterAddress, v3SwapRouterAddress } from "../../lib/contracts";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
@@ -42,7 +42,10 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
   const permitSignature = useSignTypedData();
   const slippageBps = Math.round(Number(slippage) * 100);
   const swap = useSwap(from, to, slippageBps, Number(deadline), v4Candidates);
-  const [quote, setQuote] = useState<BestSwapQuote>();
+  const getQuote = swap.quote;
+  const [quoted, setQuoted] = useState<{ amount: string; from: string; to: string; result?: BestSwapQuote }>();
+  const quote = quoted?.amount === amount && quoted.from === from.address && quoted.to === to.address
+    ? quoted.result : undefined;
   const [quoteError, setQuoteError] = useState("");
   const [priceDirection, setPriceDirection] = useState<"from" | "to">("from");
   useTransactionMessage({
@@ -83,19 +86,17 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
   useEffect(() => {
     let cancelled = false;
     setQuoteError("");
-    if (!debouncedAmount) {
-      setQuote(undefined);
-      return;
-    }
-    swap.quote(debouncedAmount).then((next) => {
-      if (!cancelled) setQuote(next);
+    setQuoted(undefined);
+    if (!debouncedAmount) return;
+    getQuote(debouncedAmount).then((next) => {
+      if (!cancelled) setQuoted({ amount: debouncedAmount, from: from.address, to: to.address, result: next });
     }).catch((error: unknown) => {
       if (!cancelled) setQuoteError(getReadableError(error));
     });
     return () => {
       cancelled = true;
     };
-  }, [debouncedAmount, swap]);
+  }, [debouncedAmount, from.address, to.address, getQuote]);
 
   const amountIn = useMemo(() => {
     try {
@@ -107,6 +108,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
   const balance = balances.data?.[from.address] ?? 0n;
   const allowance = quote?.protocol === "V3" ? v3Allowances.data?.[from.address] ?? 0n : v2Allowances.data?.[from.address] ?? 0n;
   const insufficientBalance = amountIn > balance;
+  const hasAmount = amountIn > 0n;
   const sameRouterToken = isSameRouterToken(from, to) && quote?.protocol !== "V4";
   const v4Authorization = from.isNative || quote?.protocol !== "V4" ? "READY" : getPermit2AuthorizationStep({
     amount: amountIn,
@@ -126,14 +128,18 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
   const minimumReceived = calculateMinimumReceived(quote?.amountOut, BigInt(slippageBps));
   const routeLabel = quote ? quote.protocol === "V4" ? formatV4RouteLabel(quote.fee) : quote.protocol === "V3" ? `V3 ${quote.fee / 10_000}%` : "V2" : undefined;
   const isCorrectChain = isTargetChainId(chainId);
-  const disabled = !isConnected || !isCorrectChain || !amount || insufficientBalance || !quote || Boolean(quoteError) || sameRouterToken || permitSignature.isPending;
+  const isLoading = balances.isLoading || v2Allowances.isLoading || v3Allowances.isLoading
+    || permit2TokenAllowances.isLoading || permit2Allowance.isLoading;
+  const isProcessing = approveV2.isPending || approveV3.isPending || approvePermit2Token.isPending || swap.isPending || permitSignature.isPending;
+  const disabled = !isConnected || !isCorrectChain || !hasAmount || insufficientBalance || !quote
+    || Boolean(quoteError) || sameRouterToken || isLoading || isProcessing;
   const cta = !isConnected ? "Connect Wallet" : !isCorrectChain ? `Switch to ${targetChain.name}` : sameRouterToken ? "Select different tokens" : !amount ? "Enter Amount" : insufficientBalance ? "Insufficient Balance" : needsApproval ? `Approve ${from.symbol}` : permitSignature.isPending ? "Signing" : swap.isPending ? "Pending" : "Swap";
 
   async function submitSwap() {
     if (!isCorrectChain) return;
-    if (!quote) return;
+    if (!quote || disabled) return;
     if (needsApproval) {
-      if (quote.protocol === "V4") return approvePermit2Token.approve();
+      if (quote.protocol === "V4") return approvePermit2Token.approve(amountIn);
       return quote.protocol === "V3" ? approveV3.approve(amountIn) : approveV2.approve(amountIn);
     }
     if (quote.protocol !== "V4" || from.isNative || v4Authorization === "READY") {
@@ -142,8 +148,9 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
     const nowSeconds = Math.floor(Date.now() / 1000);
     const permit = buildPermit2Single({
       token: from.address,
+      amount: amountIn,
       spender: universalRouterAddress,
-      expiration: nowSeconds + 30 * 24 * 60 * 60,
+      expiration: nowSeconds + 60 * 60,
       nonce: permit2Allowance.data?.nonce ?? 0,
       sigDeadline: BigInt(nowSeconds + Number(deadline) * 60)
     });
@@ -157,7 +164,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
         <div><h2 className="card-title">Swap</h2></div>
         <button className="icon-btn" onClick={onSettings} aria-label="Settings"><Settings className="h-4 w-4" /></button>
       </div>
-      <TokenAmountInput label="You pay" token={from} amount={amount} balance={balance} onAmountChange={onAmount} onSelect={onFrom} onMax={() => onAmount(balance ? String(Number(balance) / 10 ** from.decimals) : "")} />
+      <TokenAmountInput label="You pay" token={from} amount={amount} balance={balance} onAmountChange={onAmount} onSelect={onFrom} onMax={() => onAmount(balance ? formatUnits(balance, from.decimals) : "")} />
       <button className="swap-arrow" onClick={onFlip} aria-label="Switch tokens">
         <ArrowDownUp className="h-5 w-5" />
       </button>
@@ -177,7 +184,7 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
       <Button
         variant="primary"
         className="btn-wide"
-        disabled={needsApproval ? !isCorrectChain : disabled}
+        disabled={disabled}
         isLoading={approveV2.isPending || approveV3.isPending || approvePermit2Token.isPending || permitSignature.isPending || swap.isPending}
         onClick={submitSwap}
       >

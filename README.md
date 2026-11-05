@@ -1,5 +1,14 @@
 # Mochi Swap
 
+## 开发与构建环境
+
+- Node.js **26.13.0 LTS**（项目根目录 `.nvmrc`、`.node-version` 和 `package.json` 保持一致）。
+- Bun 用于锁定依赖（`bun.lock` 和 `bun install --frozen-lockfile`）；**应用开发、测试和构建进程运行在 Node.js 26**。
+- 本地安装：`nvm install && nvm use`，然后安装 Bun 1.4.4，运行 `bun install --frozen-lockfile`。
+- 常用命令：`npm run dev`、`npm run typecheck`、`npm run lint`、`npm test`、`npm run build`。
+- 安全检查：`bun audit --audit-level=low`；任何依赖覆盖升级后都需要通过完整 CI 并在浏览器中检查 WalletConnect 实际连接、签名、Swap。
+
+
 ## 网络使用
 
 顶部网络选择器支持 BSC Testnet 和 Robinhood Testnet，默认 BSC Testnet。已连接钱包时，选择网络会先请求钱包切链，成功后重新加载页面并回到 Swap；取消或失败会保留原应用网络并显示提示。未连接钱包时可直接切换应用网络。若之后在钱包中单独切换到了其他网络，可通过页面中的 `Switch Network` 恢复。
