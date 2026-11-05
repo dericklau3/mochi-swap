@@ -35,8 +35,18 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Set up Node.js 26.13.0
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      - name: Verify Node.js runtime
+        run: node -e "if (process.version !== 'v26.13.0') process.exit(1); console.log(process.version)"
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
