@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Set up Node.js 26.13.0
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
       - name: Verify Node.js version
@@ -34,5 +34,5 @@ jobs:
         run: npm run test
       - name: Build
         run: npm run build
-      - name: Audit high and critical dependency vulnerabilities
-        run: bun audit --audit-level=high
+      - name: Audit dependencies at all severity levels
+        run: bun audit --audit-level=low
