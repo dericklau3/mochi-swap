@@ -1,6 +1,6 @@
 import { supportsV4, targetChain } from "../lib/chains";
 import { encodeFunctionData, parseUnits, type Hex } from "viem";
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { v4PositionManagerAbi } from "../lib/abis";
 import { v4PositionManagerAddress } from "../lib/contracts";
 import { getReadableError } from "../lib/errors";
@@ -16,6 +16,7 @@ import {
   sortV4Tokens
 } from "../lib/v4";
 import type { Token, V4PoolKey } from "../types/token";
+import { useSimulatedWriteContract } from "./useSimulatedWriteContract";
 import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export function useAddV4Liquidity({
@@ -50,7 +51,7 @@ export function useAddV4Liquidity({
   deadlineMinutes: number;
 }) {
   const { address } = useAccount();
-  const write = useWriteContract();
+  const write = useSimulatedWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 

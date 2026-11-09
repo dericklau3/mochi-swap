@@ -1,15 +1,16 @@
 import { supportsV3, targetChain } from "../lib/chains";
 import { encodeFunctionData, maxUint128 } from "viem";
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { nonfungiblePositionManagerAbi } from "../lib/abis";
 import { v3PositionManagerAddress } from "../lib/contracts";
 import { getReadableError } from "../lib/errors";
 import type { V3PositionInfo } from "../types/token";
+import { useSimulatedWriteContract } from "./useSimulatedWriteContract";
 import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export function useRemoveV3Liquidity(deadlineMinutes = 20) {
   const { address } = useAccount();
-  const write = useWriteContract();
+  const write = useSimulatedWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 

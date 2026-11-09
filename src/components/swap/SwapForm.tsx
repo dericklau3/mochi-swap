@@ -179,7 +179,11 @@ export function SwapForm({ from, to, amount, slippage, deadline, v4Candidates, o
         onTogglePrice={() => setPriceDirection((current) => current === "from" ? "to" : "from")}
       />
       {balances.isLoading || v2Allowances.isLoading || v3Allowances.isLoading || permit2TokenAllowances.isLoading || permit2Allowance.isLoading ? <p className="notice">Loading balances and allowance...</p> : null}
-      {quoteError ? <p className="notice danger">{quoteError}</p> : null}
+      {quoteError ? <p className="notice danger" role="alert">{quoteError}</p> : null}
+      {swap.readableError ? <p className="notice danger" role="alert">{swap.readableError}</p> : null}
+      {approveV2.readableError || approveV3.readableError || approvePermit2Token.readableError
+        ? <p className="notice danger" role="alert">{approveV2.readableError || approveV3.readableError || approvePermit2Token.readableError}</p>
+        : null}
       {sameRouterToken ? <p className="notice warn">Native and wrapped tokens route to the same asset. Select a different pair.</p> : null}
       <Button
         variant="primary"
