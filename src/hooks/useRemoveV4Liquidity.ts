@@ -1,17 +1,18 @@
 import { supportsV4, targetChain } from "../lib/chains";
 import { useState } from "react";
-import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWaitForTransactionReceipt } from "wagmi";
 import { v4PositionManagerAbi } from "../lib/abis";
 import { v4PositionManagerAddress } from "../lib/contracts";
 import { getReadableError } from "../lib/errors";
 import { encodeV4DecreaseActions } from "../lib/v4";
 import type { V4PositionInfo } from "../types/token";
+import { useSimulatedWriteContract } from "./useSimulatedWriteContract";
 import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export function useRemoveV4Liquidity(deadlineMinutes = 20) {
   const { address } = useAccount();
   const publicClient = usePublicClient({ chainId: targetChain.id });
-  const write = useWriteContract();
+  const write = useSimulatedWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   const [prepareError, setPrepareError] = useState<unknown>();
   useInvalidateDexQueries(write.data, receipt.isSuccess);

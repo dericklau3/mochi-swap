@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getReadableError } from "./errors";
+import { getReadableError, SimulationFailedError } from "./errors";
 
 describe("getReadableError", () => {
   it("recognizes user rejected transaction errors", () => {
@@ -16,6 +16,11 @@ describe("getReadableError", () => {
 
   it("explains V4 position permission failures", () => {
     expect(getReadableError(new Error("execution reverted: 0x0ca968d8000000000000000000000000"))).toBe("Connected wallet is not approved to manage this V4 position.");
+  });
+
+  it("preserves contract revert reasons for simulated transactions", () => {
+    expect(getReadableError(new SimulationFailedError(new Error("execution reverted: INSUFFICIENT_OUTPUT_AMOUNT"))))
+      .toBe("Simulation failed: Contract reverted: INSUFFICIENT_OUTPUT_AMOUNT");
   });
 
   it("uses a safe fallback instead of leaking raw objects", () => {

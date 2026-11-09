@@ -2,13 +2,14 @@ import { targetChain } from "../lib/chains";
 import { useMemo } from "react";
 import type { Address } from "viem";
 import { maxUint256 } from "viem";
-import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useWaitForTransactionReceipt } from "wagmi";
 import { erc20Abi, uniswapV2PairAbi } from "../lib/abis";
 import { getReadableError } from "../lib/errors";
+import { useSimulatedWriteContract } from "./useSimulatedWriteContract";
 import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export function useApproveToken(token?: Address, spender?: Address, isLp = false) {
-  const write = useWriteContract();
+  const write = useSimulatedWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 

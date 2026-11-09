@@ -1,11 +1,12 @@
 import { supportsV3, targetChain } from "../lib/chains";
 import { encodeFunctionData, parseUnits } from "viem";
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { nonfungiblePositionManagerAbi } from "../lib/abis";
 import { v3PositionManagerAddress } from "../lib/contracts";
 import { getReadableError } from "../lib/errors";
 import { getV3CustomRangeTicks, getV3FeeOption, getV3FullRangeTicks, getV3InitialSqrtPriceX96, getV3MintAmountMinimums, sortV3Tokens } from "../lib/v3Routing";
 import type { Token } from "../types/token";
+import { useSimulatedWriteContract } from "./useSimulatedWriteContract";
 import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export function useAddV3Liquidity({
@@ -36,7 +37,7 @@ export function useAddV3Liquidity({
   deadlineMinutes: number;
 }) {
   const { address } = useAccount();
-  const write = useWriteContract();
+  const write = useSimulatedWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 

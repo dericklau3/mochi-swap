@@ -1,17 +1,18 @@
 import { targetChain } from "../lib/chains";
 import { parseUnits } from "viem";
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { uniswapV2RouterAbi } from "../lib/abis";
 import { routerAddress } from "../lib/contracts";
 import { getReadableError } from "../lib/errors";
 import { applySlippage } from "../lib/v3Routing";
 import { isSameRouterToken, toRouterTokenAddress } from "../lib/routerTokens";
 import type { Token } from "../types/token";
+import { useSimulatedWriteContract } from "./useSimulatedWriteContract";
 import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export function useAddLiquidity(tokenA?: Token, tokenB?: Token, slippageBps = 50, deadlineMinutes = 20) {
   const { address } = useAccount();
-  const write = useWriteContract();
+  const write = useSimulatedWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 

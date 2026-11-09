@@ -1,7 +1,7 @@
 import { supportsV3, supportsV4, targetChain } from "../lib/chains";
 import { useCallback } from "react";
 import { encodeFunctionData, parseUnits, type Hex } from "viem";
-import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWaitForTransactionReceipt } from "wagmi";
 import { quoterV2Abi, swapRouterV3Abi, universalRouterAbi, uniswapV2RouterAbi, v4QuoterAbi } from "../lib/abis";
 import { routerAddress, universalRouterAddress, v3QuoterAddress, v3SwapRouterAddress, v4QuoterAddress } from "../lib/contracts";
 import { getReadableError } from "../lib/errors";
@@ -10,6 +10,7 @@ import { applySlippage, chooseBestSwapRoute, v3FeeOptions, type SwapRouteQuote }
 import type { Token, V4PoolKey } from "../types/token";
 import type { Permit2PermitSingle } from "../lib/permit2";
 import { encodeV4SwapInput, encodeV4UniversalRouterPlan, toV4Currency } from "../lib/v4";
+import { useSimulatedWriteContract } from "./useSimulatedWriteContract";
 import { useInvalidateDexQueries } from "./useInvalidateDexQueries";
 
 export type BestSwapQuote = SwapRouteQuote & { amountOut: bigint };
@@ -18,7 +19,7 @@ export type V4SwapPermit = { permit: Permit2PermitSingle; signature: Hex };
 export function useSwap(from?: Token, to?: Token, slippageBps = 50, deadlineMinutes = 20, v4Candidates: V4PoolKey[] = []) {
   const { address } = useAccount();
   const publicClient = usePublicClient({ chainId: targetChain.id });
-  const write = useWriteContract();
+  const write = useSimulatedWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash: write.data, chainId: targetChain.id });
   useInvalidateDexQueries(write.data, receipt.isSuccess);
 

@@ -20,6 +20,12 @@ vi.mock("wagmi", () => ({
   })
 }));
 
+vi.mock("./useSimulatedWriteContract", () => ({
+  useSimulatedWriteContract: () => ({
+    data: undefined, error: undefined, isPending: false, writeContract
+  })
+}));
+
 vi.mock("./useInvalidateDexQueries", () => ({
   useInvalidateDexQueries: () => undefined
 }));
