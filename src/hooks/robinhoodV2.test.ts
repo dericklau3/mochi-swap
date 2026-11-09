@@ -16,6 +16,11 @@ vi.mock("wagmi", () => ({
   usePublicClient, useWaitForTransactionReceipt,
   useWriteContract: () => ({ writeContract, isPending: false })
 }));
+vi.mock("./useSimulatedWriteContract", () => ({
+  useSimulatedWriteContract: () => ({
+    writeContract, isPending: false, data: undefined, error: undefined
+  })
+}));
 vi.mock("./useInvalidateDexQueries", () => ({ useInvalidateDexQueries: () => undefined }));
 
 const eth: Token = { address: zeroAddress, symbol: "ETH", name: "Ether", decimals: 18, isNative: true };
