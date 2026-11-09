@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useAccount, useChainId, usePublicClient, useWriteContract } from "wagmi";
+import type { Abi, Address } from "viem";
 import { targetChain } from "../lib/chains";
 import { SimulationFailedError } from "../lib/errors";
 
@@ -15,7 +16,19 @@ export function useSimulatedWriteContract() {
   const currentWallet = useRef({ address, chainId });
   currentWallet.current = { address, chainId };
 
-  type WriteRequest = Parameters<typeof write.writeContract>[0];
+  // The generic wagmi write function narrows `value` to undefined when its
+  // Parameters<> type is extracted. Keep a broad public request shape here;
+  // viem performs the ABI-aware validation during the RPC simulation.
+  type WriteRequest = {
+    chainId: number;
+    address: Address;
+    abi: Abi;
+    functionName: string;
+    args?: readonly unknown[];
+    value?: bigint;
+    gasPrice?: bigint;
+    type?: "legacy" | "eip1559";
+  };
 
   const writeContract = useCallback(async (variables: WriteRequest) => {
     if (inFlight.current) return;
@@ -36,7 +49,7 @@ export function useSimulatedWriteContract() {
       if (currentWallet.current.address !== address || currentWallet.current.chainId !== chainId) {
         throw new Error("Wallet or network changed during simulation. Please try again.");
       }
-      write.writeContract(request as WriteRequest);
+      write.writeContract(request as Parameters<typeof write.writeContract>[0]);
     } catch (error) {
       setSimulationError(new SimulationFailedError(error));
     } finally {
